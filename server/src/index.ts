@@ -1,5 +1,4 @@
 import app from "./app";
-// import express from 'express';
 import { createServer } from 'http';
 import { SocketServer } from './services/socket.service';
 import { redisManager } from './services/redis.manager';

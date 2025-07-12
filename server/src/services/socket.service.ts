@@ -47,12 +47,12 @@ export class SocketServer {
     private async emitToUser(recipientId: string, event: string, payload: any): Promise<void> {
         const userSockets = await redisManager.getUserSockets(recipientId);
         if (userSockets && userSockets.length > 0) {
-            console.log(`📬 Emitting '${event}' to user ${recipientId} on sockets: ${userSockets.join(', ')}`);
+            // console.log(`Emitting '${event}' to user ${recipientId} on sockets: ${userSockets.join(', ')}`);
             userSockets.forEach(socketId => {
                 this.io.to(socketId).emit(event, payload);
             });
         } else {
-            console.log(`📭 User ${recipientId} is offline. Could not emit '${event}'.`);
+            console.log(`User ${recipientId} is offline. Could not emit '${event}'.`);
         }
     }
 
