@@ -13,13 +13,11 @@ import axios from 'axios';
 import '@/styles/animations.css';
 
 const registerSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
+  firstName: z.string().min(2, "Name must be at least 2 characters"),
+  lastName: z.string().min(2, "last name must be at least 2 characters"),
+  username: z.string().min(2, "username must be at least 2 characters"),
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
@@ -27,7 +25,6 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export const Register = () => {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   
@@ -42,33 +39,48 @@ export const Register = () => {
   const onSubmit = async (data: RegisterFormData) => {
     try {
       setError('');
-      const response = await axios.post('/api/auth/register', {
-        name: data.name,
-        email: data.email,
-        password: data.password,
-      });
-      const { token, user } = response.data;
-      login(token, user);
+      const response = await axios.post('http://localhost:8000/api/v1/auth/register', data);
+      const { user, accessToken } = response.data;
+      login(accessToken, user);
       navigate('/onboarding');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create account');
+      if (err.response?.data?.errors) {
+        // Handle Zod validation errors from the server
+        setError(err.response.data.errors.map((e: any) => e.message).join(', '));
+      } else {
+        setError(err.response?.data?.message || 'Failed to create account');
+      }
     }
   };
 
   const formFields = [
     {
-      name: 'name' as const,
+      name: 'firstName' as const,
       type: 'text',
-      placeholder: 'Full Name',
+      placeholder: 'First Name',
       icon: User,
       delay: 0.1,
+    },
+    {
+      name: 'lastName' as const,
+      type: 'text',
+      placeholder: 'Last Name',
+      icon: User,
+      delay: 0.2,
+    },
+    {
+      name: 'username' as const,
+      type: 'text',
+      placeholder: 'Username',
+      icon: User,
+      delay: 0.3,
     },
     {
       name: 'email' as const,
       type: 'email',
       placeholder: 'Email',
       icon: Mail,
-      delay: 0.2,
+      delay: 0.4,
     },
     {
       name: 'password' as const,
@@ -76,16 +88,7 @@ export const Register = () => {
       placeholder: 'Password',
       icon: Lock,
       showPasswordToggle: true,
-      delay: 0.3,
-    },
-    {
-      name: 'confirmPassword' as const,
-      type: showConfirmPassword ? 'text' : 'password',
-      placeholder: 'Confirm Password',
-      icon: Lock,
-      showPasswordToggle: true,
-      isConfirmPassword: true,
-      delay: 0.4,
+      delay: 0.5,
     },
   ];
 
@@ -116,14 +119,10 @@ export const Register = () => {
               {field.showPasswordToggle && (
                 <button
                   type="button"
-                  onClick={() =>
-                    field.isConfirmPassword
-                      ? setShowConfirmPassword(!showConfirmPassword)
-                      : setShowPassword(!showPassword)
-                  }
+                  onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {(field.isConfirmPassword ? showConfirmPassword : showPassword) ? (
+                  {showPassword ? (
                     <EyeOff className="h-4 w-4" />
                   ) : (
                     <Eye className="h-4 w-4" />

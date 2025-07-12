@@ -13,7 +13,7 @@ import axios from 'axios';
 import '@/styles/animations.css';
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
+  email: z.string().email('Invalid email format'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
@@ -36,17 +36,22 @@ export const Login = () => {
   const onSubmit = async (data: LoginFormData) => {
     try {
       setError('');
-      const response = await axios.post('/api/auth/login', data);
-      const { token, user } = response.data;
-      login(token, user);
+      const response = await axios.post('http://localhost:8000/api/v1/auth/login', data);
+      const { user, accessToken } = response.data;
+      login(accessToken, user);
       
       if (!user.hasCompletedOnboarding) {
         navigate('/onboarding');
       } else {
         navigate('/dashboard');
       }
-    } catch (err) {
-      setError('Invalid email or password');
+    } catch (err: any) {
+      if (err.response?.data?.errors) {
+        // Handle validation errors from the server
+        setError(err.response.data.errors.map((e: any) => e.message).join(', '));
+      } else {
+        setError(err.response?.data?.message || 'Invalid email or password');
+      }
     }
   };
 
