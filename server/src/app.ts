@@ -11,6 +11,7 @@ import dashboard from './routes/dashboard.routes';
 import profile from './routes/profile.routes';
 import admin from "./routes/admin.routes";
 import notifications from "./routes/notifications.routes";
+import onboarding from "./routes/onboarding.routes";
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use("/api/v1/auth", auth);
 app.use("/api/v1/dashboard", dashboard);
 app.use("/api/v1/profile", profile);
 app.use("/api/v1/notifications", notifications);
+app.use("/api/v1/onboarding", onboarding);
 app.use(ErrorMiddleware);
 
 export default app;
