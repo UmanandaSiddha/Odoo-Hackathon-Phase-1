@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -15,8 +16,10 @@ import {
   Activity,
   Target,
   Award,
-  BarChart
+  BarChart,
+  AlertCircle
 } from 'lucide-react'
+import { getDashboardStats, type DashboardStats } from '@/services/api'
 
 const StatCard = ({
   title,
@@ -155,225 +158,153 @@ const SkillProgress = ({
   </motion.div>
 )
 
-const AchievementCard = ({
-  title,
-  description,
-  icon: Icon,
-  delay
-}: {
-  title: string
-  description: string
-  icon: React.ElementType
-  delay: number
-}) => (
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center w-full h-64">
+    <motion.div
+      animate={{ rotate: 360 }}
+      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+      className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full"
+    />
+  </div>
+)
+
+const ErrorMessage = ({ message }: { message: string }) => (
   <motion.div
-    initial={{ opacity: 0, scale: 0.9 }}
-    animate={{ opacity: 1, scale: 1 }}
-    transition={{ delay }}
-    whileHover={{ scale: 1.05 }}
+    initial={{ opacity: 0, y: -10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="flex items-center gap-2 p-4 text-destructive bg-destructive/10 rounded-lg"
   >
-    <Card className="p-4 text-center hover:bg-accent/50 transition-colors">
-      <motion.div 
-        className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4"
-        whileHover={{ rotate: 360 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Icon className="h-6 w-6 text-primary" />
-      </motion.div>
-      <h4 className="font-medium mb-2">{title}</h4>
-      <p className="text-sm text-muted-foreground">{description}</p>
-    </Card>
+    <AlertCircle className="h-5 w-5" />
+    <p>{message}</p>
   </motion.div>
 )
 
 const Dashboard = () => {
   const { user } = useAuth()
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null)
+
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const data = await getDashboardStats()
+        
+        // Validate the required data
+        if (!data || typeof data !== 'object') {
+          throw new Error('Invalid response format')
+        }
+
+        // Set default values for missing data
+        const validatedData: DashboardStats = {
+          totalSwaps: data.totalSwaps ?? 0,
+          activeConnections: data.activeConnections ?? 0,
+          averageRating: data.averageRating ?? 0,
+          skillsProgress: data.skillsProgress ?? 0,
+          completedSwapsThisMonth: data.completedSwapsThisMonth ?? 0,
+          newConnectionsThisWeek: data.newConnectionsThisWeek ?? 0,
+          totalReviews: data.totalReviews ?? 0,
+          improvedSkills: data.improvedSkills ?? 0,
+          upcomingSwaps: Array.isArray(data.upcomingSwaps) ? data.upcomingSwaps : [],
+          skillProgress: Array.isArray(data.skillProgress) ? data.skillProgress : []
+        }
+
+        setDashboardData(validatedData)
+      } catch (err) {
+        console.error('Dashboard stats error:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load dashboard statistics. Please try again later.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchDashboardStats()
+  }, [])
+
+  if (isLoading) {
+    return <LoadingSpinner />
+  }
+
+  if (error) {
+    return <ErrorMessage message={error} />
+  }
+
+  if (!dashboardData) {
+    return null
+  }
 
   const stats = [
     {
       title: 'Total Swaps',
-      value: 24,
+      value: dashboardData.totalSwaps,
       icon: Repeat2,
-      description: '8 completed this month',
+      description: `${dashboardData.completedSwapsThisMonth} completed this month`,
       trend: { value: 12, isPositive: true }
     },
     {
       title: 'Active Connections',
-      value: 12,
+      value: dashboardData.activeConnections,
       icon: Users,
-      description: '3 new this week',
+      description: `${dashboardData.newConnectionsThisWeek} new this week`,
       trend: { value: 8, isPositive: true }
     },
     {
       title: 'Average Rating',
-      value: '4.8',
+      value: Number(dashboardData.averageRating).toFixed(1),
       icon: Star,
-      description: 'From 18 reviews',
+      description: `From ${dashboardData.totalReviews} reviews`,
       trend: { value: 5, isPositive: true }
     },
     {
       title: 'Skills Progress',
-      value: '85%',
+      value: `${dashboardData.skillsProgress}%`,
       icon: TrendingUp,
-      description: '5 skills improved',
+      description: `${dashboardData.improvedSkills} skills improved`,
       trend: { value: 15, isPositive: true }
     },
   ]
 
-  const upcomingSwaps = [
-    {
-      title: 'React Advanced Patterns',
-      with: 'Sarah Chen',
-      date: 'Today, 2:00 PM',
-      skillToLearn: 'React',
-      skillToTeach: 'UI/UX'
-    },
-    {
-      title: 'UI/UX Design Basics',
-      with: 'Mike Johnson',
-      date: 'Tomorrow, 10:00 AM',
-      skillToLearn: 'UI/UX',
-      skillToTeach: 'Node.js'
-    },
-    {
-      title: 'Node.js Performance',
-      with: 'Alex Kumar',
-      date: 'Thu, 3:30 PM',
-      skillToLearn: 'Node.js',
-      skillToTeach: 'React'
-    },
-  ]
-
-  const skillProgress = [
-    {
-      skill: 'React Development',
-      progress: 85,
-      level: 'Advanced',
-      hoursSpent: 48
-    },
-    {
-      skill: 'UI/UX Design',
-      progress: 60,
-      level: 'Intermediate',
-      hoursSpent: 32
-    },
-    {
-      skill: 'Node.js',
-      progress: 40,
-      level: 'Beginner',
-      hoursSpent: 24
-    }
-  ]
-
-  const achievements = [
-    {
-      title: 'Fast Learner',
-      description: 'Completed 5 skills in record time',
-      icon: Activity
-    },
-    {
-      title: 'Goal Setter',
-      description: 'Achieved all learning objectives',
-      icon: Target
-    },
-    {
-      title: 'Top Rated',
-      description: 'Maintained 4.8+ rating',
-      icon: Award
-    },
-    {
-      title: 'Consistent',
-      description: '30-day learning streak',
-      icon: BarChart
-    }
-  ]
-
   return (
-    <div className="space-y-8">
-      {/* Welcome Section */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
-      >
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Welcome back, {user?.name}!
-          </h1>
-          <p className="text-muted-foreground">
-            Here's what's happening with your skill swaps.
-          </p>
-        </div>
-        <Button className="hidden sm:flex" asChild>
-          <a href="/swaps/new">
-            New Swap
-            <ChevronRight className="ml-2 h-4 w-4" />
-          </a>
-        </Button>
-      </motion.div>
-
-      {/* Stats Grid */}
+    <div className="space-y-8 p-8">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, i) => (
-          <StatCard key={stat.title} {...stat} delay={i * 0.1} />
+        {stats.map((stat, index) => (
+          <StatCard key={stat.title} {...stat} delay={index * 0.1} />
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Upcoming Swaps */}
-        <Card className="p-6">
-          <CardHeader className="px-0 pt-0">
-            <div className="flex items-center justify-between">
-              <CardTitle>Upcoming Swaps</CardTitle>
-              <Button variant="ghost" size="sm" className="text-muted-foreground">
-                View all
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
+      <div className="grid gap-8 md:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Upcoming Swaps</CardTitle>
+            <Button variant="ghost" size="sm" className="text-muted-foreground">
+              View all
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
           </CardHeader>
-          <CardContent className="px-0 pb-0">
-            <div className="space-y-4">
-              {upcomingSwaps.map((swap, i) => (
-                <UpcomingSwap key={swap.title} {...swap} delay={i * 0.1} />
-              ))}
-            </div>
+          <CardContent className="space-y-4">
+            {dashboardData.upcomingSwaps.map((swap, index) => (
+              <UpcomingSwap key={index} {...swap} delay={index * 0.1} />
+            ))}
           </CardContent>
         </Card>
 
-        {/* Skill Progress */}
-        <Card className="p-6">
-          <CardHeader className="px-0 pt-0">
-            <div className="flex items-center justify-between">
-              <CardTitle>Skill Progress</CardTitle>
-              <Button variant="ghost" size="sm" className="text-muted-foreground">
-                View all
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Skills Progress</CardTitle>
+            <Button variant="ghost" size="sm" className="text-muted-foreground">
+              View all
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
           </CardHeader>
-          <CardContent className="px-0 pb-0">
-            <div className="space-y-4">
-              {skillProgress.map((skill, i) => (
-                <SkillProgress key={skill.skill} {...skill} delay={i * 0.1} />
-              ))}
-            </div>
+          <CardContent className="space-y-4">
+            {dashboardData.skillProgress.map((skill, index) => (
+              <SkillProgress key={skill.skill} {...skill} delay={index * 0.1} />
+            ))}
           </CardContent>
         </Card>
       </div>
-
-      {/* Achievements */}
-      <Card className="p-6">
-        <CardHeader className="px-0 pt-0">
-          <CardTitle>Recent Achievements</CardTitle>
-        </CardHeader>
-        <CardContent className="px-0 pb-0">
-          <div className="grid gap-4 md:grid-cols-4">
-            {achievements.map((achievement, i) => (
-              <AchievementCard key={achievement.title} {...achievement} delay={i * 0.1} />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
