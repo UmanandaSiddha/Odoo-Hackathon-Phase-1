@@ -1,8 +1,8 @@
-import catchAsyncErrors from "src/middlewares/catchAsyncErrors";
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../index";
 import { StatusCodes } from "http-status-codes";
-import ErrorHandler from "src/utils/errorHandler";
+import catchAsyncErrors from "../middlewares/catchAsyncErrors";
+import ErrorHandler from "../utils/errorHandler";
 
 export const getConversations = catchAsyncErrors(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const { userId } = req.query;
