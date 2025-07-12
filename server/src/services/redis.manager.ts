@@ -14,6 +14,10 @@ class RedisManager {
         });
     }
 
+    public getRedisClient(): Redis {
+        return this.redisClient;
+    }
+
     public static getInstance(): RedisManager {
         if (!RedisManager.instance) {
             RedisManager.instance = new RedisManager();
@@ -62,3 +66,4 @@ class RedisManager {
 }
 
 export const redisManager = RedisManager.getInstance();
+export const redisConnection = redisManager.getRedisClient();
