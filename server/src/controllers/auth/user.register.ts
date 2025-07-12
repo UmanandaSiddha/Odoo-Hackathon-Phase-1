@@ -78,8 +78,8 @@ export const register = async (req: Request, res: Response) => {
 			},
 		});
 
-		const accessToken = accessTokenGenerator(user.id);
-		const refreshToken = refreshTokenGenerator(user.id);
+		const accessToken = accessTokenGenerator(Number(user.id));
+		const refreshToken = refreshTokenGenerator(Number(user.id));
 
 		// saving the session in the database
 		const savedSession = await saveSessionInDB(

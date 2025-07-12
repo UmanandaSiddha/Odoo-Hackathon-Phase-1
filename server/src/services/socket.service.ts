@@ -146,3 +146,20 @@ export class SocketServer {
         });
     }
 }
+
+let socketServerInstance: SocketServer;
+
+export const initSocketServer = (httpServer: HttpServer): SocketServer => {
+  if (!socketServerInstance) {
+    socketServerInstance = new SocketServer(httpServer);
+    socketServerInstance.initialize();
+  }
+  return socketServerInstance;
+};
+
+export const getIO = (): Server => {
+  if (!socketServerInstance) {
+    throw new Error("Socket server not initialized.");
+  }
+  return socketServerInstance["io"]; // or socketServerInstance.getIO() if you prefer a getter
+};
