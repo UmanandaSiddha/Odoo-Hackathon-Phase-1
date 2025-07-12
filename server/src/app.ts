@@ -8,6 +8,7 @@ import ErrorMiddleware from "./middlewares/error";
 import chats from "./routes/chat.routes";
 import auth from './routes/auth.routes';
 import dashboard from './routes/dashboard.routes';
+import profile from './routes/profile.routes';
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use(express.static("public"));
 app.use("/api/v1/chats", chats);
 app.use("/api/v1/auth", auth);
 app.use("/api/v1/dashboard", dashboard);
+app.use("/api/v1/profile", profile);
 app.use(ErrorMiddleware);
 
 export default app;

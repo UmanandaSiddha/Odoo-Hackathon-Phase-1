@@ -31,9 +31,12 @@ import {
   Calendar,
   MessageSquare,
   Repeat2,
+  Loader2
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
+import { updateUserProfile, updateUserStatus, changePassword, deleteUserAccount } from '@/services/api';
+import { toast } from 'sonner';
 
 interface SettingSectionProps {
   title: string;
@@ -74,6 +77,11 @@ const SettingSection = ({
 
 const Settings = () => {
   const { theme, toggleTheme } = useTheme();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [emailNotifications, setEmailNotifications] = useState({
     swapRequests: true,
     messages: true,
@@ -94,6 +102,65 @@ const Settings = () => {
   const [languagePreference, setLanguagePreference] = useState('en');
   const [timeZone, setTimeZone] = useState('UTC');
   const [sessionTimeout, setSessionTimeout] = useState('30');
+
+  const handleSaveSettings = async () => {
+    try {
+      setIsSaving(true);
+
+      // Update profile visibility and online status
+      await updateUserProfile({
+        isPublic: privacySettings.profileVisible
+      });
+
+      // Update user status settings
+      await updateUserStatus({
+        isOnline: privacySettings.showOnlineStatus
+      });
+
+      toast.success('Settings saved successfully');
+    } catch (error) {
+      toast.error('Failed to save settings');
+      console.error('Error saving settings:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (!currentPassword || !newPassword) {
+      toast.error('Please fill in both password fields');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await changePassword({
+        currentPassword,
+        newPassword
+      });
+
+      setCurrentPassword('');
+      setNewPassword('');
+      toast.success('Password changed successfully');
+    } catch (error) {
+      toast.error('Failed to change password');
+      console.error('Error changing password:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteUserAccount();
+      window.location.href = '/login';
+    } catch (error) {
+      toast.error('Failed to delete account');
+      console.error('Error deleting account:', error);
+      setIsDeleting(false);
+    }
+  };
 
   const NotificationToggle = ({
     label,
@@ -124,9 +191,18 @@ const Settings = () => {
             Manage your account preferences and settings
           </p>
         </div>
-        <Button>
-          <CheckCircle2 className="mr-2 h-4 w-4" />
-          Save Changes
+        <Button onClick={handleSaveSettings} disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              Save Changes
+            </>
+          )}
         </Button>
       </motion.div>
 
@@ -336,22 +412,39 @@ const Settings = () => {
                 <option value="120">2 hours</option>
               </select>
             </div>
-            <div className="flex flex-col gap-2">
-              <Button variant="outline" className="justify-between">
-                <span className="flex items-center">
-                  <Lock className="h-4 w-4 mr-2" />
-                  Change Password
-                </span>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" className="justify-between">
-                <span className="flex items-center">
-                  <Smartphone className="h-4 w-4 mr-2" />
-                  Two-Factor Authentication
-                </span>
-                <Badge variant="outline" className="ml-2">
-                  Disabled
-                </Badge>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Current Password</Label>
+                <Input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>New Password</Label>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={handlePasswordChange}
+                disabled={isSaving || !currentPassword || !newPassword}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Changing Password...
+                  </>
+                ) : (
+                  <>
+                    <Lock className="h-4 w-4 mr-2" />
+                    Change Password
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -372,10 +465,42 @@ const Settings = () => {
                   Permanently delete your account and all associated data
                 </p>
               </div>
-              <Button variant="destructive">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Account
-              </Button>
+              {showDeleteConfirm ? (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={isDeleting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteAccount}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Confirm Delete
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="destructive"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Account
+                </Button>
+              )}
             </div>
           </div>
         </SettingSection>

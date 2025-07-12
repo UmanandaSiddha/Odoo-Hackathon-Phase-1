@@ -26,6 +26,39 @@ export interface DashboardStats {
   }>;
 }
 
+export interface UserProfile {
+  firstName: string;
+  lastName: string;
+  bio: string;
+  website: string;
+  phone: string;
+  profilePicture: string;
+  isPublic: boolean;
+  address?: {
+    city: string;
+    state: string;
+    country: string;
+  };
+  skillsOffered: Array<{
+    id: string;
+    name: string;
+    skillProgress: {
+      level: string;
+      progress: number;
+      hoursSpent: number;
+    };
+  }>;
+  skillsWanted: Array<{
+    id: string;
+    name: string;
+    skillProgress: {
+      level: string;
+      progress: number;
+      hoursSpent: number;
+    };
+  }>;
+}
+
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -52,19 +85,14 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
       if (error.response.status === 401) {
-        // Handle unauthorized access
         localStorage.removeItem('token');
         window.location.href = '/login';
       }
       return Promise.reject(new Error(error.response.data.message || 'An error occurred'));
     } else if (error.request) {
-      // The request was made but no response was received
       return Promise.reject(new Error('No response from server'));
     } else {
-      // Something happened in setting up the request that triggered an Error
       return Promise.reject(error);
     }
   }
@@ -75,7 +103,6 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
   try {
     const response = await api.get<DashboardStats>('/dashboard/stats');
     
-    // Validate the response data
     if (!response.data || typeof response.data !== 'object') {
       throw new Error('Invalid response format');
     }
@@ -87,4 +114,40 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
     }
     throw error;
   }
+};
+
+// Profile API
+export const updateUserProfile = async (data: Partial<UserProfile>) => {
+  const response = await api.patch('/profile/update', data);
+  return response.data;
+};
+
+export const updateSkills = async (skills: Array<{ name: string; level?: string }>, type: 'offered' | 'wanted') => {
+  const response = await api.patch('/profile/skills', { skills, type });
+  return response.data;
+};
+
+export const updateSkillProgress = async (data: {
+  skillId: string;
+  progress?: number;
+  level?: string;
+  hoursSpent?: number;
+}) => {
+  const response = await api.patch('/profile/skills/progress', data);
+  return response.data;
+};
+
+export const updateUserStatus = async (data: { isOnline?: boolean; lastLogin?: Date }) => {
+  const response = await api.patch('/profile/status', data);
+  return response.data;
+};
+
+export const changePassword = async (data: { currentPassword: string; newPassword: string }) => {
+  const response = await api.patch('/profile/password', data);
+  return response.data;
+};
+
+export const deleteUserAccount = async () => {
+  const response = await api.delete('/profile/delete');
+  return response.data;
 }; 

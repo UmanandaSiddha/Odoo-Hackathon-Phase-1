@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -21,8 +21,12 @@ import {
   Users,
   Sparkles,
   CheckCircle,
-  ArrowUpRight
+  ArrowUpRight,
+  Loader2,
+  AlertCircle
 } from 'lucide-react'
+import { updateUserProfile, updateSkills, type UserProfile } from '@/services/api'
+import { toast } from 'sonner'
 
 const SkillBadge = ({
   skill,
@@ -99,92 +103,158 @@ const AchievementCard = ({
   </motion.div>
 )
 
+interface Achievement {
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  date: string;
+}
+
+interface ExtendedUserProfile extends UserProfile {
+  location: string;
+  email: string;
+  rating?: number;
+  reviews?: number;
+  totalSwaps?: number;
+  hoursSpent?: number;
+  completionRate?: number;
+  achievements: Achievement[];
+}
+
 const Profile = () => {
   const { user } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [newSkill, setNewSkill] = useState('')
-  const [profileData, setProfileData] = useState({
-    name: user?.name || '',
-    bio: 'Full-stack developer passionate about building user-friendly applications.',
-    location: 'San Francisco, CA',
-    email: 'john@example.com',
-    phone: '+1 (555) 000-0000',
-    website: 'https://johndev.com',
-    skills: [
-      { name: 'React', level: 'Expert' },
-      { name: 'TypeScript', level: 'Advanced' },
-      { name: 'Node.js', level: 'Intermediate' },
-      { name: 'GraphQL', level: 'Advanced' },
-      { name: 'UI/UX Design', level: 'Intermediate' }
-    ],
-    interests: [
-      { name: 'Machine Learning', level: 'Beginner' },
-      { name: 'Cloud Architecture', level: 'Beginner' },
-      { name: 'Mobile Development', level: 'Intermediate' },
-      { name: 'DevOps', level: 'Beginner' }
-    ],
-    availability: {
-      weekdays: true,
-      weekends: true,
-      mornings: false,
-      afternoons: true,
-      evenings: true
-    },
-    achievements: [
-      {
-        title: 'Top Contributor',
-        description: 'Helped 50+ developers learn React',
-        icon: Award,
-        date: 'Earned 2 weeks ago'
-      },
-      {
-        title: 'Quick Learner',
-        description: 'Mastered TypeScript in record time',
-        icon: Sparkles,
-        date: 'Earned 1 month ago'
-      },
-      {
-        title: 'Community Leader',
-        description: 'Started a learning group with 100+ members',
-        icon: Users,
-        date: 'Earned 3 months ago'
-      },
-      {
-        title: 'Knowledge Sharer',
-        description: 'Published 20+ learning resources',
-        icon: BookOpen,
-        date: 'Earned 6 months ago'
-      }
-    ],
-    stats: {
-      totalSwaps: 24,
-      hoursSpent: 48,
-      rating: 4.8,
-      reviews: 18,
-      completionRate: 95
-    }
+  const [profileData, setProfileData] = useState<ExtendedUserProfile>({
+    firstName: user?.name?.split(' ')[0] || '',
+    lastName: user?.name?.split(' ')[1] || '',
+    bio: '',
+    location: '',
+    email: user?.email || '',
+    phone: '',
+    website: '',
+    profilePicture: '',
+    isPublic: true,
+    skillsOffered: [],
+    skillsWanted: [],
+    achievements: []
   })
 
-  const handleAddSkill = (type: 'skills' | 'interests') => {
-    if (newSkill.trim()) {
+  useEffect(() => {
+    // Fetch initial profile data
+    const fetchProfile = async () => {
+      try {
+        const response = await updateUserProfile({});
+        setProfileData({
+          ...response.user,
+          location: [
+            response.user.address?.city,
+            response.user.address?.state,
+            response.user.address?.country
+          ].filter(Boolean).join(', ')
+        });
+      } catch (error) {
+        toast.error('Failed to load profile data');
+        console.error('Error loading profile:', error);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const handleAddSkill = async (type: 'skills' | 'interests') => {
+    if (!newSkill.trim()) return;
+
+    try {
+      const skillType = type === 'skills' ? 'offered' : 'wanted';
+      const updatedSkills = type === 'skills' 
+        ? [...profileData.skillsOffered, { name: newSkill.trim() }]
+        : [...profileData.skillsWanted, { name: newSkill.trim() }];
+
+      const response = await updateSkills(
+        updatedSkills.map(s => ({ 
+          name: s.name, 
+          level: 'skillProgress' in s ? s.skillProgress?.level : undefined 
+        })),
+        skillType
+      );
+
       setProfileData(prev => ({
         ...prev,
-        [type]: [...prev[type], { name: newSkill.trim(), level: 'Beginner' }]
-      }))
-      setNewSkill('')
+        [type === 'skills' ? 'skillsOffered' : 'skillsWanted']: response.user[type === 'skills' ? 'skillsOffered' : 'skillsWanted']
+      }));
+
+      setNewSkill('');
+      toast.success(`${newSkill} added to your ${type}`);
+    } catch (error) {
+      toast.error('Failed to add skill');
+      console.error('Error adding skill:', error);
     }
   }
 
-  const handleRemoveSkill = (type: 'skills' | 'interests', skillToRemove: string) => {
-    setProfileData(prev => ({
-      ...prev,
-      [type]: prev[type].filter(skill => skill.name !== skillToRemove)
-    }))
+  const handleRemoveSkill = async (type: 'skills' | 'interests', skillToRemove: string) => {
+    try {
+      const skillType = type === 'skills' ? 'offered' : 'wanted';
+      const updatedSkills = type === 'skills'
+        ? profileData.skillsOffered.filter(skill => skill.name !== skillToRemove)
+        : profileData.skillsWanted.filter(skill => skill.name !== skillToRemove);
+
+      const response = await updateSkills(
+        updatedSkills.map(s => ({ 
+          name: s.name, 
+          level: 'skillProgress' in s ? s.skillProgress?.level : undefined 
+        })),
+        skillType
+      );
+
+      setProfileData(prev => ({
+        ...prev,
+        [type === 'skills' ? 'skillsOffered' : 'skillsWanted']: response.user[type === 'skills' ? 'skillsOffered' : 'skillsWanted']
+      }));
+
+      toast.success(`${skillToRemove} removed from your ${type}`);
+    } catch (error) {
+      toast.error('Failed to remove skill');
+      console.error('Error removing skill:', error);
+    }
   }
 
-  const handleSave = () => {
-    // TODO: Save profile data to backend
-    setIsEditing(false)
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      const [city, state, country] = profileData.location.split(',').map(s => s.trim());
+      
+      const response = await updateUserProfile({
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        bio: profileData.bio,
+        website: profileData.website,
+        phone: profileData.phone,
+        isPublic: profileData.isPublic,
+        address: {
+          city,
+          state,
+          country
+        }
+      });
+
+      setProfileData({
+        ...response.user,
+        location: [
+          response.user.address?.city,
+          response.user.address?.state,
+          response.user.address?.country
+        ].filter(Boolean).join(', ')
+      });
+      setIsEditing(false);
+      toast.success('Profile updated successfully');
+    } catch (error) {
+      toast.error('Failed to update profile');
+      console.error('Error updating profile:', error);
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -204,8 +274,16 @@ const Profile = () => {
         <Button
           variant={isEditing ? 'default' : 'outline'}
           onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+          disabled={isSaving}
         >
-          {isEditing ? 'Save Changes' : (
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : isEditing ? (
+            'Save Changes'
+          ) : (
             <>
               <Edit2 className="mr-2 h-4 w-4" />
               Edit Profile
@@ -231,8 +309,8 @@ const Profile = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Name</label>
                 <Input
-                  value={profileData.name}
-                  onChange={e => setProfileData(prev => ({ ...prev, name: e.target.value }))}
+                  value={profileData.firstName}
+                  onChange={e => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
                   disabled={!isEditing}
                 />
               </div>
@@ -316,9 +394,9 @@ const Profile = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-2xl font-bold">{profileData.stats.rating}</span>
+                      <span className="text-2xl font-bold">{profileData.rating}</span>
                       <span className="text-muted-foreground">
-                        ({profileData.stats.reviews} reviews)
+                        ({profileData.reviews} reviews)
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground">Overall Rating</p>
@@ -328,21 +406,21 @@ const Profile = () => {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{profileData.stats.totalSwaps}</span>
+                      <span className="font-medium">{profileData.totalSwaps}</span>
                     </div>
                     <p className="text-sm text-muted-foreground">Total Swaps</p>
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{profileData.stats.hoursSpent}h</span>
+                      <span className="font-medium">{profileData.hoursSpent}h</span>
                     </div>
                     <p className="text-sm text-muted-foreground">Hours Spent</p>
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{profileData.stats.completionRate}%</span>
+                      <span className="font-medium">{profileData.completionRate}%</span>
                     </div>
                     <p className="text-sm text-muted-foreground">Completion Rate</p>
                   </div>
@@ -393,11 +471,11 @@ const Profile = () => {
                 )}
                 <div className="flex flex-wrap gap-2">
                   <AnimatePresence mode="popLayout">
-                    {profileData.skills.map(skill => (
+                    {profileData.skillsOffered.map(skill => (
                       <SkillBadge
                         key={skill.name}
                         skill={skill.name}
-                        level={skill.level}
+                        level={skill.skillProgress?.level}
                         isEditing={isEditing}
                         onRemove={() => handleRemoveSkill('skills', skill.name)}
                       />
@@ -443,11 +521,11 @@ const Profile = () => {
                 )}
                 <div className="flex flex-wrap gap-2">
                   <AnimatePresence mode="popLayout">
-                    {profileData.interests.map(interest => (
+                    {profileData.skillsWanted.map(interest => (
                       <SkillBadge
                         key={interest.name}
                         skill={interest.name}
-                        level={interest.level}
+                        level={interest.skillProgress?.level}
                         isEditing={isEditing}
                         onRemove={() => handleRemoveSkill('interests', interest.name)}
                       />
