@@ -8,15 +8,15 @@ const refreshTokenKey = process.env.REFRESH_TOKEN_SECRET_KEY;
 
 // VALIDATING WHETHER ACCESS TOKEN AND REFRESH TOKEN ARE ACTUALLY PRESENT
 if (!accessTokenKey || !refreshTokenKey) {
-  throw new Error("Missing JWT secret keys in environment variables");
+	throw new Error("Missing JWT secret keys in environment variables");
 }
 
 const accessTokenExpiryTime = process.env.ACCESS_GENERATE_TOKEN
-  ? parseInt(process.env.ACCESS_GENERATE_TOKEN, 10)
-  : 30 * 60; // DEFAULTS TO 30 MINUTES IN SECONDS
+	? parseInt(process.env.ACCESS_GENERATE_TOKEN, 10)
+	: 30 * 60; // DEFAULTS TO 30 MINUTES IN SECONDS
 const refreshTokenExpiryTime = process.env.REFRESH_GENERATE_TOKEN
-  ? parseInt(process.env.REFRESH_GENERATE_TOKEN, 10)
-  : 14 * 24 * 60 * 60; // DEFAULTS TO 14 DAYS IN SECONDS
+	? parseInt(process.env.REFRESH_GENERATE_TOKEN, 10)
+	: 14 * 24 * 60 * 60; // DEFAULTS TO 14 DAYS IN SECONDS
 
 export const accessTokenGenerator = (userId: string) => {
   console.log("Generating access token for user:", userId);

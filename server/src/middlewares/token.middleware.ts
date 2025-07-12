@@ -1,10 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import { sendResponse } from "../utils/sendResponse";
-import { prisma } from "..";
-
-dotenv.config();
+import { prisma } from "../index";
 
 // this is the middleware function through which all routes will pass, protected ones of course
 // the requests from clients needs the access token in the field
@@ -20,16 +17,21 @@ export const authenticateUser = async (
 
 		if (!accessTokenSecretKey || !refreshTokenSecretKey) return sendResponse(res, 500, false, "Server configuration error");
 
-		const authHeader = req.headers.authorization;
-		if (!authHeader) return sendResponse(res, 401, false, "Authorization header is required");
+        let token: string = "";
 
-		// Check if the token format is correct
-		if (!authHeader.startsWith("Bearer ")) return sendResponse(res, 401, false, "Invalid token format");
+        // 1. Check Authorization header first
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+            token = authHeader.split(" ")[1];
+        }
 
-		const token = authHeader.split(" ")[1];
-		if (!token) return sendResponse(res, 401, false, "Token is required");
+        // 2. If no token in Authorization header, check cookies
+        if (!token && req.cookies && req.cookies["accessToken"]) {
+            token = req.cookies["accessToken"];
+            console.log("Token found in cookie:", token);
+        }
 
-		console.log("Received token:", token);
+		if (!token) return sendResponse(res, 401, false, "Authorization token not found in header or cookie");
 
 		// Verify access token first
 		jwt.verify(token, accessTokenSecretKey, async (err, decoded) => {

@@ -42,6 +42,7 @@ export class SocketServer {
             this.handlePrivateMessage(socket);
             this.handleTypingEvents(socket);
             this.handleNotification(socket);
+            this.handleAdminBroadcast(socket);
             this.handleDisconnect(socket);
         });
     }
@@ -64,6 +65,11 @@ export class SocketServer {
             });
             socket.broadcast.emit('user_online', { userId });
         }
+    }
+
+    broadcastToAll(event: string, payload: any): void {
+        console.log(`📢 Broadcasting event '${event}' to all clients.`);
+        this.io.emit(event, payload);
     }
 
     async emitToUser(recipientId: string, event: string, payload: any): Promise<void> {
@@ -112,6 +118,13 @@ export class SocketServer {
         });
     }
 
+    private handleAdminBroadcast(socket: SocketWithAuth): void {
+        socket.on('admin_broadcast', (payload: { message: string; title: string }) => {
+            console.log(`Admin ${socket.data.user?.id} is broadcasting a message.`);
+            this.broadcastToAll('global_announcement', payload);
+        });
+    }
+
     private handleDisconnect(socket: SocketWithAuth): void {
         socket.on('disconnect', async () => {
             const userId = socket.data.user?.id;
@@ -133,3 +146,20 @@ export class SocketServer {
         });
     }
 }
+
+let socketServerInstance: SocketServer;
+
+export const initSocketServer = (httpServer: HttpServer): SocketServer => {
+  if (!socketServerInstance) {
+    socketServerInstance = new SocketServer(httpServer);
+    socketServerInstance.initialize();
+  }
+  return socketServerInstance;
+};
+
+export const getIO = (): Server => {
+  if (!socketServerInstance) {
+    throw new Error("Socket server not initialized.");
+  }
+  return socketServerInstance["io"]; // or socketServerInstance.getIO() if you prefer a getter
+};

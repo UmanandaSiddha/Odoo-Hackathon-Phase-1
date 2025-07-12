@@ -9,6 +9,7 @@ import chats from "./routes/chat.routes";
 import auth from './routes/auth.routes';
 import dashboard from './routes/dashboard.routes';
 import profile from './routes/profile.routes';
+import admin from "./routes/admin.routes";
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.static("public"));
 
 app.use("/api/v1/chats", chats);
+app.use("/api/v1/admin", admin);
 app.use("/api/v1/auth", auth);
 app.use("/api/v1/dashboard", dashboard);
 app.use("/api/v1/profile", profile);
