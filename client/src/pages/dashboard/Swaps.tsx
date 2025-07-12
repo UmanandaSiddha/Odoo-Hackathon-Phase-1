@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,34 +20,29 @@ import {
   CalendarClock,
   Hourglass,
   CheckCircle2,
-  RotateCcw
+  RotateCcw,
+  Loader2
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { toast } from 'sonner'
+import {
+  getSwapStats,
+  getSwaps,
+  acceptSwapRequest,
+  completeSwap,
+  deleteSwapRequest,
+  SwapResponse,
+  type SwapStats as SwapStatsType
+} from '@/services/api'
 
-interface SwapData {
-  id: string
-  title: string
-  with: {
-    name: string
-    avatar: string
-    rating: number
-  }
-  skillToTeach: {
-    name: string
-    level: string
-  }
-  skillToLearn: {
-    name: string
-    level: string
-  }
-  status: 'pending' | 'accepted' | 'completed' | 'cancelled'
-  date: string
-  duration: string
-  messages: number
-  lastActive: string
-}
+const SwapCard = ({ swap, onAccept, onComplete, onDelete }: { 
+  swap: SwapResponse;
+  onAccept: (id: string) => Promise<void>;
+  onComplete: (id: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}) => {
+  const [isLoading, setIsLoading] = useState(false);
 
-const SwapCard = ({ swap }: { swap: SwapData }) => {
   const statusColors = {
     pending: 'bg-yellow-500/10 text-yellow-500',
     accepted: 'bg-blue-500/10 text-blue-500',
@@ -64,6 +59,31 @@ const SwapCard = ({ swap }: { swap: SwapData }) => {
 
   const StatusIcon = statusIcons[swap.status]
 
+  const handleAction = async (action: 'accept' | 'complete' | 'delete') => {
+    try {
+      setIsLoading(true);
+      switch (action) {
+        case 'accept':
+          await onAccept(swap.id);
+          toast.success('Swap request accepted');
+          break;
+        case 'complete':
+          await onComplete(swap.id);
+          toast.success('Swap marked as completed');
+          break;
+        case 'delete':
+          await onDelete(swap.id);
+          toast.success('Swap request deleted');
+          break;
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing swap:`, error);
+      toast.error(`Failed to ${action} swap`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -72,7 +92,7 @@ const SwapCard = ({ swap }: { swap: SwapData }) => {
       whileHover={{ y: -5 }}
       className="group"
     >
-      <Card className="overflow-hidden transition-all hover:shadow-lg">
+      <Card className={`overflow-hidden transition-all hover:shadow-lg ${isLoading ? 'opacity-50' : ''}`}>
         <CardContent className="p-6">
           <div className="flex items-start justify-between gap-4">
             {/* Left Section */}
@@ -154,35 +174,49 @@ const SwapCard = ({ swap }: { swap: SwapData }) => {
             exit={{ opacity: 0, height: 0 }}
             className="mt-4 pt-4 border-t flex items-center justify-end gap-2"
           >
-            {swap.status === 'pending' && (
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
               <>
-                <Button variant="outline" size="sm">
-                  <XCircle className="w-4 h-4 mr-1" />
-                  Decline
-                </Button>
-                <Button size="sm">
-                  <CheckCircle className="w-4 h-4 mr-1" />
-                  Accept
-                </Button>
+                {swap.status === 'pending' && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => handleAction('delete')}>
+                      <XCircle className="w-4 h-4 mr-1" />
+                      Decline
+                    </Button>
+                    <Button size="sm" onClick={() => handleAction('accept')}>
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Accept
+                    </Button>
+                  </>
+                )}
+                {swap.status === 'accepted' && (
+                  <>
+                    <Button variant="outline" size="sm">
+                      <RotateCcw className="w-4 h-4 mr-1" />
+                      Reschedule
+                    </Button>
+                    <Button size="sm" onClick={() => handleAction('complete')}>
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Complete
+                    </Button>
+                    <Button size="sm" asChild>
+                      <Link to={`/chat/${swap.id}`}>
+                        <MessageCircle className="w-4 h-4 mr-1" />
+                        Message
+                      </Link>
+                    </Button>
+                  </>
+                )}
+                {swap.status === 'completed' && (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={`/reviews/new/${swap.id}`}>
+                      <Star className="w-4 h-4 mr-1" />
+                      Leave Review
+                    </Link>
+                  </Button>
+                )}
               </>
-            )}
-            {swap.status === 'accepted' && (
-              <>
-                <Button variant="outline" size="sm">
-                  <RotateCcw className="w-4 h-4 mr-1" />
-                  Reschedule
-                </Button>
-                <Button size="sm">
-                  <MessageCircle className="w-4 h-4 mr-1" />
-                  Message
-                </Button>
-              </>
-            )}
-            {swap.status === 'completed' && (
-              <Button variant="outline" size="sm">
-                <Star className="w-4 h-4 mr-1" />
-                Leave Review
-              </Button>
             )}
           </motion.div>
         </CardContent>
@@ -191,13 +225,13 @@ const SwapCard = ({ swap }: { swap: SwapData }) => {
   )
 }
 
-const SwapStats = () => (
+const SwapStats = ({ stats }: { stats: SwapStatsType }) => (
   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
     {[
-      { label: 'Pending Swaps', value: 3, icon: Clock4, color: 'text-yellow-500' },
-      { label: 'Active Swaps', value: 2, icon: CalendarClock, color: 'text-blue-500' },
-      { label: 'Completed', value: 12, icon: CheckCircle2, color: 'text-green-500' },
-      { label: 'Hours Exchanged', value: '24h', icon: Hourglass, color: 'text-primary' }
+      { label: 'Pending Swaps', value: stats.pending, icon: Clock4, color: 'text-yellow-500' },
+      { label: 'Active Swaps', value: stats.active, icon: CalendarClock, color: 'text-blue-500' },
+      { label: 'Completed', value: stats.completed, icon: CheckCircle2, color: 'text-green-500' },
+      { label: 'Hours Exchanged', value: `${stats.hoursExchanged}h`, icon: Hourglass, color: 'text-primary' }
     ].map((stat, index) => (
       <motion.div
         key={stat.label}
@@ -227,75 +261,65 @@ const SwapStats = () => (
 const Swaps = () => {
   const [filter, setFilter] = useState<'all' | 'pending' | 'accepted' | 'completed' | 'cancelled'>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [swaps, setSwaps] = useState<SwapResponse[]>([])
+  const [stats, setStats] = useState<SwapStatsType>({ pending: 0, active: 0, completed: 0, hoursExchanged: 0 })
+  const [isLoading, setIsLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
 
-  const swaps: SwapData[] = [
-    {
-      id: '1',
-      title: 'React Advanced Patterns',
-      with: {
-        name: 'Sarah Chen',
-        avatar: '',
-        rating: 4.8
-      },
-      skillToTeach: {
-        name: 'React',
-        level: 'Expert'
-      },
-      skillToLearn: {
-        name: 'UI/UX',
-        level: 'Intermediate'
-      },
-      status: 'pending',
-      date: 'Today, 2:00 PM',
-      duration: '1 hour',
-      messages: 5,
-      lastActive: '5 mins ago'
-    },
-    {
-      id: '2',
-      title: 'Node.js Performance Optimization',
-      with: {
-        name: 'Mike Johnson',
-        avatar: '',
-        rating: 4.9
-      },
-      skillToTeach: {
-        name: 'Node.js',
-        level: 'Advanced'
-      },
-      skillToLearn: {
-        name: 'React',
-        level: 'Beginner'
-      },
-      status: 'accepted',
-      date: 'Tomorrow, 3:00 PM',
-      duration: '1.5 hours',
-      messages: 12,
-      lastActive: '1 hour ago'
-    },
-    {
-      id: '3',
-      title: 'TypeScript Best Practices',
-      with: {
-        name: 'Alex Kumar',
-        avatar: '',
-        rating: 4.7
-      },
-      skillToTeach: {
-        name: 'TypeScript',
-        level: 'Expert'
-      },
-      skillToLearn: {
-        name: 'GraphQL',
-        level: 'Intermediate'
-      },
-      status: 'completed',
-      date: 'Yesterday',
-      duration: '1 hour',
-      messages: 8,
-      lastActive: '2 days ago'
+  const fetchSwaps = async () => {
+    try {
+      setIsLoading(true);
+      const response = await getSwaps(filter, searchQuery, page);
+      if (response.success && response.data) {
+        setSwaps(response.data.swaps);
+        setTotalPages(response.data.pagination.pages);
+      }
+    } catch (error) {
+      console.error('Error fetching swaps:', error);
+      toast.error('Failed to fetch swaps');
+    } finally {
+      setIsLoading(false);
     }
-  ]
+  };
+
+  const fetchStats = async () => {
+    try {
+      const response = await getSwapStats();
+      if (response.success && response.data) {
+        setStats(response.data.stats);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      toast.error('Failed to fetch stats');
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  useEffect(() => {
+    fetchSwaps();
+  }, [filter, searchQuery, page]);
+
+  const handleAccept = async (id: string) => {
+    await acceptSwapRequest(id);
+    await fetchSwaps();
+    await fetchStats();
+  };
+
+  const handleComplete = async (id: string) => {
+    await completeSwap(id);
+    await fetchSwaps();
+    await fetchStats();
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteSwapRequest(id);
+    await fetchSwaps();
+    await fetchStats();
+  };
 
   const filterOptions = [
     { label: 'All', value: 'all' },
@@ -303,18 +327,7 @@ const Swaps = () => {
     { label: 'Accepted', value: 'accepted' },
     { label: 'Completed', value: 'completed' },
     { label: 'Cancelled', value: 'cancelled' }
-  ]
-
-  const filteredSwaps = swaps
-    .filter(swap => filter === 'all' || swap.status === filter)
-    .filter(swap =>
-      searchQuery
-        ? swap.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          swap.with.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          swap.skillToTeach.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          swap.skillToLearn.name.toLowerCase().includes(searchQuery.toLowerCase())
-        : true
-    )
+  ];
 
   return (
     <div className="space-y-8">
@@ -344,7 +357,7 @@ const Swaps = () => {
       </div>
 
       {/* Stats */}
-      <SwapStats />
+      <SwapStats stats={stats} />
 
       {/* Filters and Search */}
       <Card>
@@ -356,7 +369,10 @@ const Swaps = () => {
                 <Input
                   placeholder="Search swaps..."
                   value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
+                  onChange={e => {
+                    setSearchQuery(e.target.value);
+                    setPage(1);
+                  }}
                   className="pl-9"
                 />
               </div>
@@ -367,7 +383,10 @@ const Swaps = () => {
                 <Button
                   key={option.value}
                   variant={filter === option.value ? 'default' : 'outline'}
-                  onClick={() => setFilter(option.value as typeof filter)}
+                  onClick={() => {
+                    setFilter(option.value as typeof filter);
+                    setPage(1);
+                  }}
                   size="sm"
                 >
                   {option.label}
@@ -381,10 +400,46 @@ const Swaps = () => {
       {/* Swaps List */}
       <div className="space-y-4">
         <AnimatePresence mode="popLayout">
-          {filteredSwaps.map(swap => (
-            <SwapCard key={swap.id} swap={swap} />
-          ))}
-          {filteredSwaps.length === 0 && (
+          {isLoading ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center justify-center py-12"
+            >
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </motion.div>
+          ) : swaps.length > 0 ? (
+            <>
+              {swaps.map(swap => (
+                <SwapCard
+                  key={swap.id}
+                  swap={swap}
+                  onAccept={handleAccept}
+                  onComplete={handleComplete}
+                  onDelete={handleDelete}
+                />
+              ))}
+              {totalPages > 1 && (
+                <div className="flex justify-center gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </>
+          ) : (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
