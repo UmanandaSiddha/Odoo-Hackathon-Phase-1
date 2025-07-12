@@ -295,3 +295,66 @@ export const deleteSwapRequest = async (id: string) => {
   const response = await api.delete<APIResponse<{ message: string }>>(`/requests/${id}`);
   return response.data;
 }; 
+
+// Chat Interfaces
+export interface ChatContact {
+  id: string;
+  name: string;
+  avatar: string;
+  online: boolean;
+}
+
+export interface ChatMessage {
+  id: string;
+  content: string;
+  sender: 'me' | 'other';
+  timestamp: string;
+  status: 'sent' | 'delivered' | 'read';
+}
+
+export interface Conversation {
+  id: string;
+  contact: ChatContact;
+  lastMessage: string;
+  timestamp: string;
+  unreadCount: number;
+  totalMessages: number;
+}
+
+// Chat API Functions
+export const getConversations = async (): Promise<Conversation[]> => {
+  const response = await api.get('/conversations');
+  return response.data.conversations;
+};
+
+export const getMessagesForConversation = async (
+  conversationId: string,
+  page = 1,
+  limit = 20
+): Promise<{
+  messages: ChatMessage[];
+  totalMessages: number;
+  totalPages: number;
+  currentPage: number;
+}> => {
+  const response = await api.get(`/conversations/${conversationId}/messages`, {
+    params: { page, limit, sort: 'createdAt_desc' }
+  });
+  return response.data;
+};
+
+export const sendMessage = async (recipientId: string, message: string): Promise<ChatMessage> => {
+  const response = await api.post(`/messages/${recipientId}`, { message });
+  return response.data.chat;
+};
+
+export const updateMessageStatus = async (messageId: string, status: 'delivered' | 'read'): Promise<void> => {
+  await api.patch(`/messages/${messageId}/status`, { status });
+};
+
+export const searchContacts = async (query: string): Promise<ChatContact[]> => {
+  const response = await api.get('/contacts/search', {
+    params: { query }
+  });
+  return response.data.contacts;
+}; 
