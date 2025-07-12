@@ -5,16 +5,17 @@ import cors, { CorsOptions } from "cors";
 import helmet from "helmet";
 import ErrorMiddleware from "./middlewares/error";
 
-import chats  from "./routes/chat.routes";
+import chats from "./routes/chat.routes";
 import auth from './routes/auth.routes';
+import dashboard from './routes/dashboard.routes';
 
 const app = express();
 
 const corsOptions: CorsOptions = {
     origin: (origin, callback) => {
         const allowedOrigins = [
-			"http://localhost:5173",
-			"http://localhost:5174",
+            "http://localhost:5173",
+            "http://localhost:5174",
         ];
 
         if (!origin || allowedOrigins.includes(origin as string)) {
@@ -37,6 +38,7 @@ app.use(express.static("public"));
 
 app.use("/api/v1/chats", chats);
 app.use("/api/v1/auth", auth);
+app.use("/api/v1/dashboard", dashboard);
 app.use(ErrorMiddleware);
 
 export default app;

@@ -18,6 +18,30 @@ enum SwapRequestStatus {
     PENDING
 }
 
+model Achievement {
+    id          String   @id @default(uuid())
+    userId      String
+    user        User     @relation(fields: [userId], references: [id])
+    title       String
+    description String
+    icon        String
+    unlockedAt  DateTime @default(now())
+    createdAt   DateTime @default(now()) @map("created_at")
+    updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+}
+
+model SkillProgress {
+    id         String   @id @default(uuid())
+    userId     String
+    user       User     @relation(fields: [userId], references: [id])
+    skillName  String
+    progress   Int      @default(0) // Percentage from 0 to 100
+    level      String   // Beginner, Intermediate, Advanced
+    hoursSpent Int      @default(0)
+    createdAt  DateTime @default(now()) @map("created_at")
+    updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+}
+
 model User {
     id                String             @id @default(uuid())
     firstName         String
@@ -54,6 +78,8 @@ model User {
     createdAt         DateTime           @default(now()) @map("created_at")
     updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at")
     addressId         String?
+    achievements      Achievement[]
+    skillProgress    SkillProgress[]
 
     @@index([username])
     @@index([email])
