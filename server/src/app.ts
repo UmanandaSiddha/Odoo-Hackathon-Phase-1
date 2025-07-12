@@ -10,6 +10,7 @@ import auth from './routes/auth.routes';
 import dashboard from './routes/dashboard.routes';
 import profile from './routes/profile.routes';
 import admin from "./routes/admin.routes";
+import notifications from "./routes/notifications.routes";
 
 const app = express();
 
@@ -43,6 +44,7 @@ app.use("/api/v1/admin", admin);
 app.use("/api/v1/auth", auth);
 app.use("/api/v1/dashboard", dashboard);
 app.use("/api/v1/profile", profile);
+app.use("/api/v1/notifications", notifications);
 app.use(ErrorMiddleware);
 
 export default app;

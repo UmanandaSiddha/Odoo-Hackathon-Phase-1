@@ -1,203 +1,237 @@
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum UserRole {
-    ADMIN
-    USER
+  ADMIN
+  USER
 }
 
 enum SwapRequestStatus {
-    ACCEPTED
-    REJECTED
-    PENDING
+  PENDING
+  ACCEPTED
+  COMPLETED
+  CANCELLED
+}
+
+enum NotificationType {
+  SWAP
+  MESSAGE
+  SYSTEM
+  REVIEW
+}
+
+enum NotificationPriority {
+  HIGH
+  MEDIUM
+  LOW
 }
 
 model Achievement {
-    id          String   @id @default(uuid())
-    userId      String
-    user        User     @relation(fields: [userId], references: [id])
-    title       String
-    description String
-    icon        String
-    unlockedAt  DateTime @default(now())
-    createdAt   DateTime @default(now()) @map("created_at")
-    updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  title       String
+  description String
+  icon        String
+  unlockedAt  DateTime @default(now())
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 }
 
 model SkillProgress {
-    id         String   @id @default(uuid())
-    userId     String
-    user       User     @relation(fields: [userId], references: [id])
-    skillName  String
-    progress   Int      @default(0) // Percentage from 0 to 100
-    level      String   // Beginner, Intermediate, Advanced
-    hoursSpent Int      @default(0)
-    createdAt  DateTime @default(now()) @map("created_at")
-    updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  skillName  String
+  progress   Int      @default(0) // Percentage from 0 to 100
+  level      String // Beginner, Intermediate, Advanced
+  hoursSpent Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 }
 
 model User {
-    id                String             @id @default(uuid())
-    firstName         String
-    lastName          String
-    username          String             @unique
-    email             String             @unique
-    password          String
-    role              UserRole           @default(USER)
-    isVerified        Boolean            @default(false)
-    isPublic          Boolean            @default(true)
-    isOnline          Boolean            @default(false)
-    isBanned          Boolean            @default(false)
-    rating            Decimal            @db.Decimal(10, 2)
-    bio               String?            @db.Text
-    website           String?
-    phone             String?
-    location          Address?           @relation(fields: [addressId], references: [id])
-    profilePicture    String?
-    sessions          Session[]
-    notification      Notification[]
-    conversations     Conversation[]
-    chats             Chat[]             @relation("Sender")
-    recievedChats     Chat[]             @relation("Reciever")
-    skillsOffered     Skill[]            @relation("OfferedSkills")
-    skillsWanted      Skill[]            @relation("WantedSkills")
-    sentRequests      SwapRequest[]      @relation("Sender")
-    recievedRequests  SwapRequest[]      @relation("Receiver")
-    feedbackGiven     Feedback[]         @relation("Reviewer")
-    feedbackRecieved  Feedback[]         @relation("Reviewee")
-    availability      Availability[]
-    invalidatedTokens InvalidatedToken[]
-    lastLogin         DateTime?
-    oneTimePassword   String?
-    oneTimeExpire     DateTime?
-    resetToken        String?
-    resetTokenExpire  DateTime?
-    createdAt         DateTime           @default(now()) @map("created_at")
-    updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at")
-    addressId         String?
-    achievements      Achievement[]
-    skillProgress     SkillProgress[]
+  id                String             @id @default(uuid())
+  firstName         String
+  lastName          String
+  username          String             @unique
+  email             String             @unique
+  password          String
+  role              UserRole           @default(USER)
+  isVerified        Boolean            @default(false)
+  isPublic          Boolean            @default(true)
+  isOnline          Boolean            @default(false)
+  isBanned          Boolean            @default(false)
+  rating            Decimal            @db.Decimal(10, 2)
+  bio               String?            @db.Text
+  website           String?
+  phone             String?
+  location          Address?           @relation(fields: [addressId], references: [id])
+  profilePicture    String?
+  sessions          Session[]
+  notification      Notification[]
+  conversations     Conversation[]
+  chats             Chat[]             @relation("Sender")
+  recievedChats     Chat[]             @relation("Reciever")
+  skillsOffered     Skill[]            @relation("OfferedSkills")
+  skillsWanted      Skill[]            @relation("WantedSkills")
+  sentRequests      SwapRequest[]      @relation("Sender")
+  recievedRequests  SwapRequest[]      @relation("Receiver")
+  feedbackGiven     Feedback[]         @relation("Reviewer")
+  feedbackRecieved  Feedback[]         @relation("Reviewee")
+  availability      Availability[]
+  invalidatedTokens InvalidatedToken[]
+  lastLogin         DateTime?
+  oneTimePassword   String?
+  oneTimeExpire     DateTime?
+  resetToken        String?
+  resetTokenExpire  DateTime?
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at")
+  addressId         String?
+  achievements      Achievement[]
+  skillProgress     SkillProgress[]
 
-    @@index([username])
-    @@index([email])
-    @@index([role])
+  @@index([username])
+  @@index([email])
+  @@index([role])
 }
 
 model Session {
-    id           String   @id @default(uuid())
-    accessToken  String   @unique
-    refreshToken String   @unique
-    expiresAt    DateTime
-    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    userId       String
+  id           String   @id @default(uuid())
+  accessToken  String   @unique
+  refreshToken String   @unique
+  expiresAt    DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
 }
 
 model InvalidatedToken {
-    id            String   @id @default(uuid())
-    refreshToken  String   @unique
-    userId        String
-    user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    invalidatedAt DateTime @default(now())
+  id            String   @id @default(uuid())
+  refreshToken  String   @unique
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invalidatedAt DateTime @default(now())
 }
 
 model Notification {
-    id        String   @id @default(uuid())
-    userId    String
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    isRead    Boolean  @default(false)
-    content   String
-    metadata  Json
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  id          String               @id @default(uuid())
+  userId      String
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  title       String
+  description String
+  isRead      Boolean              @default(false)
+  priority    NotificationPriority @default(MEDIUM)
+  actionUrl   String?
+  metadata    Json?
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @default(now()) @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
 }
 
 model Address {
-    id      String @id @default(uuid())
-    address String
-    street  String
-    city    String
-    state   String
-    country String
-    pinCode String
-    User    User[]
+  id      String @id @default(uuid())
+  address String
+  street  String
+  city    String
+  state   String
+  country String
+  pinCode String
+  User    User[]
 }
 
 model Skill {
-    id          String @id @default(uuid())
-    name        String
-    description String
-    userId      String
-    userOffered User?  @relation("OfferedSkills", fields: [userId], references: [id], map: "Skill_userId_offered_fkey")
-    userWanted  User?  @relation("WantedSkills", fields: [userId], references: [id], map: "Skill_userId_wanted_fkey")
+  id          String @id @default(uuid())
+  name        String
+  description String
+  userId      String
+  userOffered User?  @relation("OfferedSkills", fields: [userId], references: [id], map: "Skill_userId_offered_fkey")
+  userWanted  User?  @relation("WantedSkills", fields: [userId], references: [id], map: "Skill_userId_wanted_fkey")
 
-    @@index([name])
+  @@index([name])
 }
 
 model SwapRequest {
-    id           String            @id @default(uuid())
-    senderId     String
-    receiverId   String
-    skillOffered String
-    skillWanted  String
-    status       SwapRequestStatus @default(PENDING)
-    sender       User              @relation("Sender", fields: [senderId], references: [id])
-    receiver     User              @relation("Receiver", fields: [receiverId], references: [id])
-    createdAt    DateTime          @default(now()) @map("created_at")
-    updatedAt    DateTime          @default(now()) @updatedAt @map("updated_at")
+  id           String            @id @default(uuid())
+  senderId     String
+  receiverId   String
+  skillOffered String
+  skillWanted  String
+  status       SwapRequestStatus @default(PENDING)
+  duration     Int?              @default(1)
+  lastActivity DateTime?
+  messages     Chat[]            @relation("SwapRequest_messages")
+  sender       User              @relation("Sender", fields: [senderId], references: [id])
+  receiver     User              @relation("Receiver", fields: [receiverId], references: [id])
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @default(now()) @updatedAt @map("updated_at")
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Feedback {
-    id         String   @id @default(uuid())
-    reviewerId String
-    revieweeId String
-    comment    String?
-    rating     Int // 1 to 5
-    reviewer   User     @relation("Reviewer", fields: [reviewerId], references: [id])
-    reviewee   User     @relation("Reviewee", fields: [revieweeId], references: [id])
-    createdAt  DateTime @default(now()) @map("created_at")
-    updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+  id         String   @id @default(uuid())
+  reviewerId String
+  revieweeId String
+  comment    String?
+  rating     Int // 1 to 5
+  reviewer   User     @relation("Reviewer", fields: [reviewerId], references: [id])
+  reviewee   User     @relation("Reviewee", fields: [revieweeId], references: [id])
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 }
 
 model Availability {
-    id       String @id @default(uuid())
-    userId   String
-    day      String
-    timeSlot String
-    user     User   @relation(fields: [userId], references: [id])
+  id       String @id @default(uuid())
+  userId   String
+  day      String
+  timeSlot String
+  user     User   @relation(fields: [userId], references: [id])
 }
 
 model Conversation {
-    id           String   @id @default(uuid())
-    chats        Chat[]
-    participants User[]
-    createdAt    DateTime @default(now()) @map("created_at")
-    updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  chats        Chat[]
+  participants User[]
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 }
 
 model Chat {
-    id             String       @id @default(uuid())
-    message        String
-    senderId       String
-    receiverId     String
-    conversationId String
-    conversation   Conversation @relation(fields: [conversationId], references: [id])
-    sender         User         @relation("Sender", fields: [senderId], references: [id])
-    receiver       User         @relation("Reciever", fields: [receiverId], references: [id])
-    createdAt      DateTime     @default(now()) @map("created_at")
-    updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at")
+  id             String       @id @default(uuid())
+  message        String
+  senderId       String
+  receiverId     String
+  conversationId String
+  swapRequestId  String?
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  sender         User         @relation("Sender", fields: [senderId], references: [id])
+  receiver       User         @relation("Reciever", fields: [receiverId], references: [id])
+  swapRequest    SwapRequest? @relation("SwapRequest_messages", fields: [swapRequestId], references: [id])
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at")
+
+  @@index([swapRequestId])
 }
 
 model AdminMessage {
-    id        String   @id @default(cuid())
-    title     String
-    body      String
-    sentAt    DateTime @default(now())
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  sentAt    DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -19,99 +19,47 @@ import {
   Repeat2,
   Settings,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import {
+  getNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  deleteNotification,
+  deleteAllNotifications,
+  NotificationResponse,
+  type NotificationStats as NotificationStatsType,
+} from '@/services/api';
 
-interface Notification {
-  id: string;
-  type: 'swap' | 'message' | 'system' | 'review';
-  title: string;
-  description: string;
-  timestamp: string;
-  read: boolean;
-  actionUrl?: string;
-  priority: 'high' | 'medium' | 'low';
-  metadata?: {
-    userName?: string;
-    skillName?: string;
-    rating?: number;
-  };
+interface NotificationCardProps {
+  notification: NotificationResponse;
+  onMarkAsRead: (id: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }
 
-const notifications: Notification[] = [
-  {
-    id: '1',
-    type: 'swap',
-    title: 'New Swap Request',
-    description: 'Sarah Chen wants to learn React from you',
-    timestamp: '5 minutes ago',
-    read: false,
-    actionUrl: '/swaps',
-    priority: 'high',
-    metadata: {
-      userName: 'Sarah Chen',
-      skillName: 'React',
-    },
-  },
-  {
-    id: '2',
-    type: 'review',
-    title: 'New Review Received',
-    description: 'Mike Johnson gave you a 5-star rating',
-    timestamp: '1 hour ago',
-    read: false,
-    actionUrl: '/profile',
-    priority: 'medium',
-    metadata: {
-      userName: 'Mike Johnson',
-      rating: 5,
-    },
-  },
-  {
-    id: '3',
-    type: 'message',
-    title: 'New Message',
-    description: 'Alex Kumar sent you a message about the Node.js session',
-    timestamp: '2 hours ago',
-    read: true,
-    actionUrl: '/chat',
-    priority: 'high',
-    metadata: {
-      userName: 'Alex Kumar',
-    },
-  },
-  {
-    id: '4',
-    type: 'system',
-    title: 'Profile Verification',
-    description: 'Your profile has been successfully verified',
-    timestamp: 'Yesterday',
-    read: true,
-    priority: 'low',
-  },
-];
-
-const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
+const NotificationIcon = ({ type }: { type: NotificationResponse['type'] }) => {
   const icons = {
-    swap: Repeat2,
-    message: MessageSquare,
-    system: AlertCircle,
-    review: Star,
+    SWAP: Repeat2,
+    MESSAGE: MessageSquare,
+    SYSTEM: AlertCircle,
+    REVIEW: Star,
   };
   const Icon = icons[type];
   return <Icon className="h-5 w-5" />;
 };
 
-const PriorityBadge = ({ priority }: { priority: Notification['priority'] }) => {
+const PriorityBadge = ({ priority }: { priority: NotificationResponse['priority'] }) => {
   const colors = {
-    high: 'bg-red-500/10 text-red-500',
-    medium: 'bg-yellow-500/10 text-yellow-500',
-    low: 'bg-green-500/10 text-green-500',
+    HIGH: 'bg-red-500/10 text-red-500',
+    MEDIUM: 'bg-yellow-500/10 text-yellow-500',
+    LOW: 'bg-green-500/10 text-green-500',
   };
 
   return (
     <span className={`px-2 py-1 rounded-full text-xs ${colors[priority]}`}>
-      {priority}
+      {priority.toLowerCase()}
     </span>
   );
 };
@@ -120,11 +68,31 @@ const NotificationCard = ({
   notification,
   onMarkAsRead,
   onDelete,
-}: {
-  notification: Notification;
-  onMarkAsRead: (id: string) => void;
-  onDelete: (id: string) => void;
-}) => {
+}: NotificationCardProps) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleMarkAsRead = async () => {
+    try {
+      setIsLoading(true);
+      await onMarkAsRead(notification.id);
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      setIsLoading(true);
+      await onDelete(notification.id);
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <motion.div
       layout
@@ -135,12 +103,13 @@ const NotificationCard = ({
     >
       <Card className={cn(
         "p-4 transition-all hover:shadow-md",
-        !notification.read && "bg-primary/5 dark:bg-primary/10"
+        !notification.isRead && "bg-primary/5 dark:bg-primary/10",
+        isLoading && "opacity-50"
       )}>
         <div className="flex items-start gap-4">
           <div className={cn(
             "p-2 rounded-full",
-            notification.read ? "bg-muted" : "bg-primary/10"
+            notification.isRead ? "bg-muted" : "bg-primary/10"
           )}>
             <NotificationIcon type={notification.type} />
           </div>
@@ -160,7 +129,13 @@ const NotificationCard = ({
             
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
-              <span>{notification.timestamp}</span>
+              <span>{new Date(notification.timestamp).toLocaleString(undefined, { 
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}</span>
             </div>
 
             {notification.metadata && (
@@ -193,13 +168,18 @@ const NotificationCard = ({
           animate={{ opacity: 1 }}
           className="mt-3 pt-3 border-t flex items-center justify-end gap-2"
         >
-          {!notification.read && (
+          {!notification.isRead && (
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onMarkAsRead(notification.id)}
+              onClick={handleMarkAsRead}
+              disabled={isLoading}
             >
-              <CheckCircle2 className="h-4 w-4 mr-1" />
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4 mr-1" />
+              )}
               Mark as read
             </Button>
           )}
@@ -214,9 +194,14 @@ const NotificationCard = ({
             size="sm"
             variant="ghost"
             className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={() => onDelete(notification.id)}
+            onClick={handleDelete}
+            disabled={isLoading}
           >
-            <Trash2 className="h-4 w-4" />
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
           </Button>
         </motion.div>
       </Card>
@@ -224,23 +209,23 @@ const NotificationCard = ({
   );
 };
 
-const NotificationStats = () => {
-  const stats = [
+const NotificationStats = ({ stats }: { stats: NotificationStatsType }) => {
+  const statItems = [
     {
       label: 'Unread',
-      value: '3',
+      value: stats.unread.toString(),
       icon: Bell,
       color: 'text-primary',
     },
     {
       label: 'This Week',
-      value: '12',
+      value: stats.weekly.toString(),
       icon: Calendar,
       color: 'text-blue-500',
     },
     {
       label: 'Total',
-      value: '148',
+      value: stats.total.toString(),
       icon: CheckCircle2,
       color: 'text-green-500',
     },
@@ -248,7 +233,7 @@ const NotificationStats = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {stats.map((stat, index) => (
+      {statItems.map((stat, index) => (
         <motion.div
           key={stat.label}
           initial={{ opacity: 0, y: 20 }}
@@ -274,37 +259,84 @@ const NotificationStats = () => {
 
 const NotificationsPage = () => {
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
-  const [notificationList, setNotificationList] = useState(notifications);
+  const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
+  const [stats, setStats] = useState<NotificationStatsType>({ unread: 0, weekly: 0, total: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const handleMarkAsRead = (id: string) => {
-    setNotificationList(prev =>
-      prev.map(notif =>
-        notif.id === id ? { ...notif, read: true } : notif
-      )
-    );
+  const fetchNotifications = async () => {
+    try {
+      setIsLoading(true);
+      const response = await getNotifications(filter, page);
+      if (response.success && response.data) {
+        setNotifications(response.data.notifications);
+        setStats(response.data.stats);
+        setTotalPages(response.data.pagination.pages);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      toast.error('Failed to fetch notifications');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setNotificationList(prev =>
-      prev.filter(notif => notif.id !== id)
-    );
+  useEffect(() => {
+    fetchNotifications();
+  }, [filter, page]);
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      const response = await markNotificationAsRead(id);
+      if (response.success) {
+        await fetchNotifications();
+        toast.success('Notification marked as read');
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      toast.error('Failed to mark notification as read');
+    }
   };
 
-  const handleMarkAllAsRead = () => {
-    setNotificationList(prev =>
-      prev.map(notif => ({ ...notif, read: true }))
-    );
+  const handleDelete = async (id: string) => {
+    try {
+      const response = await deleteNotification(id);
+      if (response.success) {
+        await fetchNotifications();
+        toast.success('Notification deleted');
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      toast.error('Failed to delete notification');
+    }
   };
 
-  const handleClearAll = () => {
-    setNotificationList([]);
+  const handleMarkAllAsRead = async () => {
+    try {
+      const response = await markAllNotificationsAsRead();
+      if (response.success) {
+        await fetchNotifications();
+        toast.success('All notifications marked as read');
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      toast.error('Failed to mark all notifications as read');
+    }
   };
 
-  const filteredNotifications = notificationList.filter(notif => {
-    if (filter === 'unread') return !notif.read;
-    if (filter === 'read') return notif.read;
-    return true;
-  });
+  const handleClearAll = async () => {
+    try {
+      const response = await deleteAllNotifications();
+      if (response.success) {
+        await fetchNotifications();
+        toast.success('All notifications cleared');
+      }
+    } catch (error) {
+      console.error('Error clearing all notifications:', error);
+      toast.error('Failed to clear all notifications');
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -337,7 +369,7 @@ const NotificationsPage = () => {
       </div>
 
       {/* Stats */}
-      <NotificationStats />
+      <NotificationStats stats={stats} />
 
       {/* Filters */}
       <Card className="p-4">
@@ -349,7 +381,10 @@ const NotificationsPage = () => {
                 key={f}
                 size="sm"
                 variant={filter === f ? 'default' : 'outline'}
-                onClick={() => setFilter(f as typeof filter)}
+                onClick={() => {
+                  setFilter(f as typeof filter);
+                  setPage(1);
+                }}
               >
                 {f.charAt(0).toUpperCase() + f.slice(1)}
               </Button>
@@ -361,15 +396,45 @@ const NotificationsPage = () => {
       {/* Notifications List */}
       <motion.div layout className="space-y-4">
         <AnimatePresence mode="popLayout">
-          {filteredNotifications.map((notification) => (
-            <NotificationCard
-              key={notification.id}
-              notification={notification}
-              onMarkAsRead={handleMarkAsRead}
-              onDelete={handleDelete}
-            />
-          ))}
-          {filteredNotifications.length === 0 && (
+          {isLoading ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center justify-center py-12"
+            >
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </motion.div>
+          ) : notifications.length > 0 ? (
+            <>
+              {notifications.map((notification) => (
+                <NotificationCard
+                  key={notification.id}
+                  notification={notification}
+                  onMarkAsRead={handleMarkAsRead}
+                  onDelete={handleDelete}
+                />
+              ))}
+              {totalPages > 1 && (
+                <div className="flex justify-center gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </>
+          ) : (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
