@@ -120,7 +120,7 @@ export const Sidebar = ({ isCollapsed, onCollapsedChange }: SidebarProps) => {
           'flex items-center gap-2 h-12',
           isCollapsed ? 'justify-center' : 'px-2'
         )}>
-          <img src="/logo.svg" alt="Skill Swap" className="h-6 w-6" />
+          <img src="./logo.svg" alt="Skill Swap" className="h-6 w-6" />
           <AnimatePresence>
             {!isCollapsed && (
               <motion.span 
