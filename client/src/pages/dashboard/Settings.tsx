@@ -1,283 +1,316 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import {
   Bell,
-  Mail,
   Lock,
+  Mail,
+  Moon,
+  Sun,
+  User,
+  Shield,
   Globe,
   Clock,
+  AlertTriangle,
   Trash2,
-  AlertCircle
-} from 'lucide-react'
+  ChevronRight,
+  CheckCircle2,
+  X,
+  AlertCircle,
+  Smartphone,
+  Eye,
+  EyeOff,
+  BellRing,
+  Languages,
+  Palette,
+  Calendar,
+  MessageSquare,
+  Repeat2,
+} from 'lucide-react';
+import { useTheme } from '@/context/ThemeContext';
+import { cn } from '@/lib/utils';
+
+interface SettingSectionProps {
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+  delay?: number;
+}
 
 const SettingSection = ({
   title,
   description,
   icon: Icon,
   children,
-  delay = 0
-}: {
-  title: string
-  description: string
-  icon: React.ElementType
-  children: React.ReactNode
-  delay?: number
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay }}
-  >
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <div className="p-2 bg-primary/10 rounded-lg">
+  delay = 0,
+}: SettingSectionProps) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+    >
+      <Card className="p-6">
+        <div className="flex items-start gap-4">
+          <div className="p-2 rounded-lg bg-primary/10">
             <Icon className="h-5 w-5 text-primary" />
           </div>
-          <CardTitle>{title}</CardTitle>
+          <div className="flex-1">
+            <h2 className="text-xl font-semibold mb-1">{title}</h2>
+            <p className="text-muted-foreground mb-4">{description}</p>
+            {children}
+          </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground mb-6">{description}</p>
-        {children}
-      </CardContent>
-    </Card>
-  </motion.div>
-)
+      </Card>
+    </motion.div>
+  );
+};
 
 const Settings = () => {
-  const [emailSettings, setEmailSettings] = useState({
-    dailyDigest: true,
+  const { theme, toggleTheme } = useTheme();
+  const [emailNotifications, setEmailNotifications] = useState({
     swapRequests: true,
     messages: true,
-    reviews: false
-  })
-
-  const [notificationSettings, setNotificationSettings] = useState({
-    desktop: true,
-    sound: true,
-    browser: false
-  })
-
-  const [availabilitySettings, setAvailabilitySettings] = useState({
-    weekdays: true,
-    weekends: true,
-    mornings: false,
-    afternoons: true,
-    evenings: true
-  })
-
+    reminders: true,
+    marketing: false,
+  });
+  const [pushNotifications, setPushNotifications] = useState({
+    swapRequests: true,
+    messages: true,
+    reminders: false,
+  });
   const [privacySettings, setPrivacySettings] = useState({
-    publicProfile: true,
-    showEmail: false,
-    showAvailability: true
-  })
+    profileVisible: true,
+    showOnlineStatus: true,
+    showLastSeen: false,
+    allowMessages: true,
+  });
+  const [languagePreference, setLanguagePreference] = useState('en');
+  const [timeZone, setTimeZone] = useState('UTC');
+  const [sessionTimeout, setSessionTimeout] = useState('30');
 
-  const handleSettingChange = <T extends Record<string, boolean>>(
-    setter: React.Dispatch<React.SetStateAction<T>>,
-    key: keyof T
-  ) => (checked: boolean) => {
-    setter(prev => ({ ...prev, [key]: checked }))
-  }
+  const NotificationToggle = ({
+    label,
+    checked,
+    onChange,
+  }: {
+    label: string;
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+  }) => (
+    <div className="flex items-center justify-between py-2">
+      <span className="text-sm">{label}</span>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </div>
+  );
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your account settings and preferences
-        </p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between"
+      >
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <p className="text-muted-foreground">
+            Manage your account preferences and settings
+          </p>
+        </div>
+        <Button>
+          <CheckCircle2 className="mr-2 h-4 w-4" />
+          Save Changes
+        </Button>
+      </motion.div>
 
       <div className="grid gap-6">
-        {/* Email Notifications */}
+        {/* Theme & Appearance */}
         <SettingSection
-          title="Email Notifications"
-          description="Choose what types of email notifications you'd like to receive"
-          icon={Mail}
+          title="Theme & Appearance"
+          description="Customize how Skill Swap looks and feels"
+          icon={Palette}
+          delay={0.1}
         >
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label htmlFor="dailyDigest">Daily Digest</Label>
-              <Switch
-                id="dailyDigest"
-                checked={emailSettings.dailyDigest}
-                onCheckedChange={handleSettingChange(setEmailSettings, 'dailyDigest')}
-              />
+              <div>
+                <Label>Theme Mode</Label>
+                <p className="text-sm text-muted-foreground">
+                  Choose your preferred theme
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={theme === 'light' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={toggleTheme}
+                >
+                  <Sun className="h-4 w-4 mr-1" />
+                  Light
+                </Button>
+                <Button
+                  variant={theme === 'dark' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={toggleTheme}
+                >
+                  <Moon className="h-4 w-4 mr-1" />
+                  Dark
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="swapRequests">Swap Requests</Label>
-              <Switch
-                id="swapRequests"
-                checked={emailSettings.swapRequests}
-                onCheckedChange={handleSettingChange(setEmailSettings, 'swapRequests')}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="messages">Messages</Label>
-              <Switch
-                id="messages"
-                checked={emailSettings.messages}
-                onCheckedChange={handleSettingChange(setEmailSettings, 'messages')}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="reviews">Reviews</Label>
-              <Switch
-                id="reviews"
-                checked={emailSettings.reviews}
-                onCheckedChange={handleSettingChange(setEmailSettings, 'reviews')}
-              />
-            </div>
+          </div>
+        </SettingSection>
+
+        {/* Email Notifications */}
+        <SettingSection
+          title="Email Notifications"
+          description="Choose what emails you'd like to receive"
+          icon={Mail}
+          delay={0.2}
+        >
+          <div className="space-y-2">
+            <NotificationToggle
+              label="Swap Requests"
+              checked={emailNotifications.swapRequests}
+              onChange={(checked) =>
+                setEmailNotifications((prev) => ({ ...prev, swapRequests: checked }))
+              }
+            />
+            <NotificationToggle
+              label="New Messages"
+              checked={emailNotifications.messages}
+              onChange={(checked) =>
+                setEmailNotifications((prev) => ({ ...prev, messages: checked }))
+              }
+            />
+            <NotificationToggle
+              label="Session Reminders"
+              checked={emailNotifications.reminders}
+              onChange={(checked) =>
+                setEmailNotifications((prev) => ({ ...prev, reminders: checked }))
+              }
+            />
+            <NotificationToggle
+              label="Marketing Updates"
+              checked={emailNotifications.marketing}
+              onChange={(checked) =>
+                setEmailNotifications((prev) => ({ ...prev, marketing: checked }))
+              }
+            />
           </div>
         </SettingSection>
 
         {/* Push Notifications */}
         <SettingSection
           title="Push Notifications"
-          description="Configure your push notification preferences"
-          icon={Bell}
-          delay={0.1}
+          description="Manage your mobile and desktop notifications"
+          icon={BellRing}
+          delay={0.3}
         >
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="desktop">Desktop Notifications</Label>
-              <Switch
-                id="desktop"
-                checked={notificationSettings.desktop}
-                onCheckedChange={handleSettingChange(setNotificationSettings, 'desktop')}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="sound">Notification Sound</Label>
-              <Switch
-                id="sound"
-                checked={notificationSettings.sound}
-                onCheckedChange={handleSettingChange(setNotificationSettings, 'sound')}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="browser">Browser Notifications</Label>
-              <Switch
-                id="browser"
-                checked={notificationSettings.browser}
-                onCheckedChange={handleSettingChange(setNotificationSettings, 'browser')}
-              />
-            </div>
-          </div>
-        </SettingSection>
-
-        {/* Availability */}
-        <SettingSection
-          title="Availability"
-          description="Set your general availability for skill swaps"
-          icon={Clock}
-          delay={0.2}
-        >
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <Badge
-                variant={availabilitySettings.weekdays ? 'default' : 'outline'}
-                className="cursor-pointer"
-                onClick={() =>
-                  setAvailabilitySettings(prev => ({
-                    ...prev,
-                    weekdays: !prev.weekdays
-                  }))
-                }
-              >
-                Weekdays
-              </Badge>
-              <Badge
-                variant={availabilitySettings.weekends ? 'default' : 'outline'}
-                className="cursor-pointer"
-                onClick={() =>
-                  setAvailabilitySettings(prev => ({
-                    ...prev,
-                    weekends: !prev.weekends
-                  }))
-                }
-              >
-                Weekends
-              </Badge>
-              <Badge
-                variant={availabilitySettings.mornings ? 'default' : 'outline'}
-                className="cursor-pointer"
-                onClick={() =>
-                  setAvailabilitySettings(prev => ({
-                    ...prev,
-                    mornings: !prev.mornings
-                  }))
-                }
-              >
-                Mornings
-              </Badge>
-              <Badge
-                variant={availabilitySettings.afternoons ? 'default' : 'outline'}
-                className="cursor-pointer"
-                onClick={() =>
-                  setAvailabilitySettings(prev => ({
-                    ...prev,
-                    afternoons: !prev.afternoons
-                  }))
-                }
-              >
-                Afternoons
-              </Badge>
-              <Badge
-                variant={availabilitySettings.evenings ? 'default' : 'outline'}
-                className="cursor-pointer"
-                onClick={() =>
-                  setAvailabilitySettings(prev => ({
-                    ...prev,
-                    evenings: !prev.evenings
-                  }))
-                }
-              >
-                Evenings
-              </Badge>
-            </div>
+          <div className="space-y-2">
+            <NotificationToggle
+              label="Swap Requests"
+              checked={pushNotifications.swapRequests}
+              onChange={(checked) =>
+                setPushNotifications((prev) => ({ ...prev, swapRequests: checked }))
+              }
+            />
+            <NotificationToggle
+              label="New Messages"
+              checked={pushNotifications.messages}
+              onChange={(checked) =>
+                setPushNotifications((prev) => ({ ...prev, messages: checked }))
+              }
+            />
+            <NotificationToggle
+              label="Session Reminders"
+              checked={pushNotifications.reminders}
+              onChange={(checked) =>
+                setPushNotifications((prev) => ({ ...prev, reminders: checked }))
+              }
+            />
           </div>
         </SettingSection>
 
         {/* Privacy */}
         <SettingSection
           title="Privacy"
-          description="Control your privacy settings and what others can see"
+          description="Control your profile visibility and communication preferences"
+          icon={Eye}
+          delay={0.4}
+        >
+          <div className="space-y-2">
+            <NotificationToggle
+              label="Public Profile"
+              checked={privacySettings.profileVisible}
+              onChange={(checked) =>
+                setPrivacySettings((prev) => ({ ...prev, profileVisible: checked }))
+              }
+            />
+            <NotificationToggle
+              label="Show Online Status"
+              checked={privacySettings.showOnlineStatus}
+              onChange={(checked) =>
+                setPrivacySettings((prev) => ({ ...prev, showOnlineStatus: checked }))
+              }
+            />
+            <NotificationToggle
+              label="Show Last Seen"
+              checked={privacySettings.showLastSeen}
+              onChange={(checked) =>
+                setPrivacySettings((prev) => ({ ...prev, showLastSeen: checked }))
+              }
+            />
+            <NotificationToggle
+              label="Allow Direct Messages"
+              checked={privacySettings.allowMessages}
+              onChange={(checked) =>
+                setPrivacySettings((prev) => ({ ...prev, allowMessages: checked }))
+              }
+            />
+          </div>
+        </SettingSection>
+
+        {/* Language & Region */}
+        <SettingSection
+          title="Language & Region"
+          description="Set your preferred language and time zone"
           icon={Globe}
-          delay={0.3}
+          delay={0.5}
         >
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="publicProfile">Public Profile</Label>
-              <Switch
-                id="publicProfile"
-                checked={privacySettings.publicProfile}
-                onCheckedChange={handleSettingChange(setPrivacySettings, 'publicProfile')}
-              />
+            <div>
+              <Label>Language</Label>
+              <select
+                value={languagePreference}
+                onChange={(e) => setLanguagePreference(e.target.value)}
+                className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2"
+              >
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+              </select>
             </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="showEmail">Show Email</Label>
-              <Switch
-                id="showEmail"
-                checked={privacySettings.showEmail}
-                onCheckedChange={handleSettingChange(setPrivacySettings, 'showEmail')}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="showAvailability">Show Availability</Label>
-              <Switch
-                id="showAvailability"
-                checked={privacySettings.showAvailability}
-                onCheckedChange={handleSettingChange(setPrivacySettings, 'showAvailability')}
-              />
+            <div>
+              <Label>Time Zone</Label>
+              <select
+                value={timeZone}
+                onChange={(e) => setTimeZone(e.target.value)}
+                className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2"
+              >
+                <option value="UTC">UTC</option>
+                <option value="EST">Eastern Time</option>
+                <option value="PST">Pacific Time</option>
+                <option value="IST">India Standard Time</option>
+              </select>
             </div>
           </div>
         </SettingSection>
@@ -286,16 +319,41 @@ const Settings = () => {
         <SettingSection
           title="Security"
           description="Manage your account security settings"
-          icon={Lock}
-          delay={0.4}
+          icon={Shield}
+          delay={0.6}
         >
           <div className="space-y-4">
-            <Button variant="outline" className="w-full sm:w-auto">
-              Change Password
-            </Button>
-            <Button variant="outline" className="w-full sm:w-auto">
-              Enable Two-Factor Auth
-            </Button>
+            <div>
+              <Label>Session Timeout (minutes)</Label>
+              <select
+                value={sessionTimeout}
+                onChange={(e) => setSessionTimeout(e.target.value)}
+                className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2"
+              >
+                <option value="15">15 minutes</option>
+                <option value="30">30 minutes</option>
+                <option value="60">1 hour</option>
+                <option value="120">2 hours</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button variant="outline" className="justify-between">
+                <span className="flex items-center">
+                  <Lock className="h-4 w-4 mr-2" />
+                  Change Password
+                </span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" className="justify-between">
+                <span className="flex items-center">
+                  <Smartphone className="h-4 w-4 mr-2" />
+                  Two-Factor Authentication
+                </span>
+                <Badge variant="outline" className="ml-2">
+                  Disabled
+                </Badge>
+              </Button>
+            </div>
           </div>
         </SettingSection>
 
@@ -303,19 +361,27 @@ const Settings = () => {
         <SettingSection
           title="Danger Zone"
           description="Irreversible and destructive actions"
-          icon={AlertCircle}
-          delay={0.5}
+          icon={AlertTriangle}
+          delay={0.7}
         >
           <div className="space-y-4">
-            <Button variant="destructive" className="w-full sm:w-auto">
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete Account
-            </Button>
+            <div className="flex items-center justify-between p-4 border border-destructive/50 rounded-lg">
+              <div>
+                <h3 className="font-medium text-destructive">Delete Account</h3>
+                <p className="text-sm text-muted-foreground">
+                  Permanently delete your account and all associated data
+                </p>
+              </div>
+              <Button variant="destructive">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Account
+              </Button>
+            </div>
           </div>
         </SettingSection>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Settings 
+export default Settings; 
