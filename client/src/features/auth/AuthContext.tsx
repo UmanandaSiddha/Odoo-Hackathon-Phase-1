@@ -24,15 +24,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for token on mount
-    const token = localStorage.getItem('token');
-    if (token) {
-      // Set up axios interceptor
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      // TODO: Validate token with backend
-      setIsAuthenticated(true);
-    }
-    setIsLoading(false);
+    const loadUser = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          // Set up axios interceptor
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          
+          // Fetch user data
+          const response = await axios.get('/api/auth/me');
+          const userData = response.data;
+          
+          setUser(userData);
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error('Failed to load user:', error);
+          // If token is invalid, clear it
+          localStorage.removeItem('token');
+          delete axios.defaults.headers.common['Authorization'];
+        }
+      }
+      setIsLoading(false);
+    };
+
+    loadUser();
   }, []);
 
   const login = (token: string, userData: User) => {
