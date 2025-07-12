@@ -42,6 +42,7 @@ export class SocketServer {
             this.handlePrivateMessage(socket);
             this.handleTypingEvents(socket);
             this.handleNotification(socket);
+            this.handleAdminBroadcast(socket);
             this.handleDisconnect(socket);
         });
     }
@@ -64,6 +65,11 @@ export class SocketServer {
             });
             socket.broadcast.emit('user_online', { userId });
         }
+    }
+
+    broadcastToAll(event: string, payload: any): void {
+        console.log(`📢 Broadcasting event '${event}' to all clients.`);
+        this.io.emit(event, payload);
     }
 
     async emitToUser(recipientId: string, event: string, payload: any): Promise<void> {
@@ -109,6 +115,13 @@ export class SocketServer {
     private handleNotification(socket: SocketWithAuth): void {
         socket.on('push_notification', async (payload: NotificationPayload) => {
             await this.emitToUser(payload.recipientId, 'notification', payload);
+        });
+    }
+
+    private handleAdminBroadcast(socket: SocketWithAuth): void {
+        socket.on('admin_broadcast', (payload: { message: string; title: string }) => {
+            console.log(`Admin ${socket.data.user?.id} is broadcasting a message.`);
+            this.broadcastToAll('global_announcement', payload);
         });
     }
 

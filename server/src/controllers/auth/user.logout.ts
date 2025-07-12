@@ -1,10 +1,7 @@
 import { Request, Response } from "express";
-import dotenv from 'dotenv';
-import { prisma } from "../..";
+import { prisma } from "../../index";
 import { fetchUser } from "../../utils/auth/fetchUser";
 import { sendResponse } from "../../utils/sendResponse";
-
-dotenv.config();
 
 export const logout = async (req: Request, res: Response) => {
     try {

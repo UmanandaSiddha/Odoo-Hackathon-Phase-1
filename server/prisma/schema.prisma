@@ -102,6 +102,7 @@ model Address {
 model Skill {
     id          String @id @default(uuid())
     name        String
+    description String
     userId      String
     userOffered User?  @relation("OfferedSkills", fields: [userId], references: [id], map: "Skill_userId_offered_fkey")
     userWanted  User?  @relation("WantedSkills", fields: [userId], references: [id], map: "Skill_userId_wanted_fkey")

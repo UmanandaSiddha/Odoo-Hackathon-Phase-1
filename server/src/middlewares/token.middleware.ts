@@ -1,10 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import { sendResponse } from "../utils/sendResponse";
-import { prisma } from "..";
-
-dotenv.config();
+import { prisma } from "../index";
 
 // this is the middleware function through which all routes will pass, protected ones of course
 // the requests from clients needs the access token in the field
