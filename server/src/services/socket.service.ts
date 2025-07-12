@@ -1,6 +1,8 @@
 import { Server as HttpServer } from 'http';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { redisManager } from './redis.manager';
+import { prisma } from "../index";
+import { socketAuthMiddleware, SocketWithAuth } from '../middlewares/socket.middleware';
 
 interface PrivateMessagePayload {
     recipientId: string;
@@ -28,15 +30,15 @@ export class SocketServer {
                 methods: ["GET", "POST"]
             }
         });
+        this.io.use(socketAuthMiddleware);
     }
-    
+
     public initialize(): void {
         console.log('🔌 Socket server initializing...');
 
-        this.io.on('connection', (socket: Socket) => {
-            console.log(`⚡ New client connected: ${socket.id}`);
-
-            this.handleAuthentication(socket);
+        this.io.on('connection', (socket: SocketWithAuth) => {
+            console.log(`⚡ New client connected: ${socket.id} with user: ${socket.data.user?.id}`);
+            this.handleConnection(socket);
             this.handlePrivateMessage(socket);
             this.handleTypingEvents(socket);
             this.handleNotification(socket);
@@ -44,40 +46,40 @@ export class SocketServer {
         });
     }
 
+    private async handleConnection(socket: SocketWithAuth) {
+        const userId = socket.data.user?.id;
+        if (!userId) return;
+
+        console.log(`⚡ User ${userId} connected with socket ID: ${socket.id}`);
+        
+        const wasOffline = !(await redisManager.isUserOnline(userId));
+        
+        await redisManager.addUserSocket(userId, socket.id);
+
+        if (wasOffline) {
+            console.log(`🟢 User ${userId} is now online.`);
+            await prisma.user.update({
+                where: { id: userId },
+                data: { isOnline: true },
+            });
+            socket.broadcast.emit('user_online', { userId });
+        }
+    }
+
     private async emitToUser(recipientId: string, event: string, payload: any): Promise<void> {
         const userSockets = await redisManager.getUserSockets(recipientId);
         if (userSockets && userSockets.length > 0) {
-            // console.log(`Emitting '${event}' to user ${recipientId} on sockets: ${userSockets.join(', ')}`);
             userSockets.forEach(socketId => {
                 this.io.to(socketId).emit(event, payload);
             });
         } else {
-            console.log(`User ${recipientId} is offline. Could not emit '${event}'.`);
+            console.log(`📭 User ${recipientId} is offline. Could not emit '${event}'.`);
         }
     }
 
-    private handleAuthentication(socket: Socket): void {
-        socket.on('authenticate', async (userId: string) => {
-            if (!userId) return;
-
-            console.log(`🔒 Authenticating user ${userId} for socket ${socket.id}`);
-            
-            socket.data.userId = userId;
-
-            const wasOffline = !(await redisManager.isUserOnline(userId));
-            
-            await redisManager.addUserSocket(userId, socket.id);
-
-            if (wasOffline) {
-                socket.broadcast.emit('user_online', { userId });
-                console.log(`🟢 User ${userId} is now online.`);
-            }
-        });
-    }
-
-    private handlePrivateMessage(socket: Socket): void {
+    private handlePrivateMessage(socket: SocketWithAuth): void {
         socket.on('private_message', async (payload: PrivateMessagePayload) => {
-            const senderId = socket.data.userId;
+            const senderId = socket.data.user?.id;
             if (!senderId) return;
 
             const messageData = {
@@ -90,39 +92,43 @@ export class SocketServer {
         });
     }
 
-    private handleTypingEvents(socket: Socket): void {
-        const senderId = socket.data.userId;
-        if (!senderId) return;
-
+    private handleTypingEvents(socket: SocketWithAuth): void {
         socket.on('typing', async (payload: TypingPayload) => {
+            const senderId = socket.data.user?.id;
+            if (!senderId) return;
             await this.emitToUser(payload.recipientId, 'typing', { senderId });
         });
 
         socket.on('stop_typing', async (payload: TypingPayload) => {
+            const senderId = socket.data.user?.id;
+            if (!senderId) return;
             await this.emitToUser(payload.recipientId, 'stop_typing', { senderId });
         });
     }
     
-    private handleNotification(socket: Socket): void {
+    private handleNotification(socket: SocketWithAuth): void {
         socket.on('push_notification', async (payload: NotificationPayload) => {
             await this.emitToUser(payload.recipientId, 'notification', payload);
         });
     }
 
-    private handleDisconnect(socket: Socket): void {
+    private handleDisconnect(socket: SocketWithAuth): void {
         socket.on('disconnect', async () => {
-            console.log(`🔌 Client disconnected: ${socket.id}`);
-            const userId = socket.data.userId;
+            const userId = socket.data.user?.id;
+            if (!userId) return;
 
-            if (userId) {
-                await redisManager.removeUserSocket(userId, socket.id);
-                
-                const isStillOnline = await redisManager.isUserOnline(userId);
+            console.log(`🔌 User ${userId} disconnected socket: ${socket.id}`);
 
-                if (!isStillOnline) {
-                    console.log(`🔴 User ${userId} is now offline.`);
-                    socket.broadcast.emit('user_offline', { userId });
-                }
+            await redisManager.removeUserSocket(userId, socket.id);
+            const isStillOnline = await redisManager.isUserOnline(userId);
+
+            if (!isStillOnline) {
+                console.log(`🔴 User ${userId} is now offline.`);
+                await prisma.user.update({
+                    where: { id: userId },
+                    data: { isOnline: false },
+                });
+                socket.broadcast.emit('user_offline', { userId });
             }
         });
     }
