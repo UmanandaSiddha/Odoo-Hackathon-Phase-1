@@ -18,20 +18,18 @@ const refreshTokenExpiryTime = process.env.REFRESH_GENERATE_TOKEN
   ? parseInt(process.env.REFRESH_GENERATE_TOKEN, 10)
   : 14 * 24 * 60 * 60; // DEFAULTS TO 14 DAYS IN SECONDS
 
-export const accessTokenGenerator = (userId: number) => {
-  console.log("access token generated with the time as follows: ", accessTokenExpiryTime);
-  const accessToken = jwt.sign({ userId: userId }, accessTokenKey, {
+export const accessTokenGenerator = (userId: string) => {
+  console.log("Generating access token for user:", userId);
+  const accessToken = jwt.sign({ userId }, accessTokenKey, {
     expiresIn: accessTokenExpiryTime || "30m",
   });
-  console.log("access token generated: ", accessToken);
   return accessToken;
 };
 
-export const refreshTokenGenerator = (userId: number) => {
-  console.log("refresh token generated with the time as follows: ", refreshTokenExpiryTime);
-  const refreshToken = jwt.sign({ userId: userId }, refreshTokenKey, {
+export const refreshTokenGenerator = (userId: string) => {
+  console.log("Generating refresh token for user:", userId);
+  const refreshToken = jwt.sign({ userId }, refreshTokenKey, {
     expiresIn: refreshTokenExpiryTime || "14d",
   });
-  console.log("refresh token generated: ", refreshToken);
   return refreshToken;
 };
