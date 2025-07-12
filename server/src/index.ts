@@ -20,9 +20,22 @@ const socketServer = new SocketServer(httpServer);
 socketServer.initialize();
 
 const PORT = process.env.PORT || 8000;
-httpServer.listen(PORT, () => {
-    console.log(`🚀 Server is running on http://localhost:${PORT}`);
-});
+
+async function startServer() {
+    try {
+        await prisma.$connect();
+        console.log("✅ Database connection established successfully.");
+
+        httpServer.listen(PORT, () => {
+            console.log(`🚀 Server is running on http://localhost:${PORT}`);
+        });
+    } catch (error) {
+        console.error("❌ Failed to connect to the database", error);
+        process.exit(1);
+    }
+}
+
+startServer();
 
 process.on('SIGINT', () => {
     console.log('🔌 Shutting down server...');
