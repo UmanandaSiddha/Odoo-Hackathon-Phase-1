@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
 import { prisma } from "../index";
 import bcrypt from 'bcryptjs';
-
-// import { verifyAuth } from '@/middleware/auth';
+import { StatusCodes } from 'http-status-codes';
+import ErrorHandler from '../utils/errorHandler';
 
 export const getCurrentUser = async (req: Request, res: Response) => {
     try {
-        const userId = req.user?.id;
+        const userId = (req as any).user?.userId;
 
         if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
@@ -30,6 +30,9 @@ export const getCurrentUser = async (req: Request, res: Response) => {
                 lastLogin: true,
                 createdAt: true,
                 updatedAt: true,
+                website: true,
+                bio: true,
+                phone: true,
 
                 location: {
                     select: {
@@ -44,11 +47,31 @@ export const getCurrentUser = async (req: Request, res: Response) => {
                 availability: true,
 
                 skillsOffered: {
-                    select: { name: true },
+                    select: {
+                        id: true,
+                        name: true,
+                        skillProgress: {
+                            select: {
+                                level: true,
+                                progress: true,
+                                hoursSpent: true
+                            }
+                        }
+                    },
                 },
 
                 skillsWanted: {
-                    select: { name: true },
+                    select: {
+                        id: true,
+                        name: true,
+                        skillProgress: {
+                            select: {
+                                level: true,
+                                progress: true,
+                                hoursSpent: true
+                            }
+                        }
+                    },
                 },
 
                 feedbackRecieved: {
@@ -64,6 +87,19 @@ export const getCurrentUser = async (req: Request, res: Response) => {
                         },
                     },
                 },
+
+                achievements: {
+                    select: {
+                        id: true,
+                        title: true,
+                        description: true,
+                        icon: true,
+                        unlockedAt: true
+                    },
+                    orderBy: {
+                        unlockedAt: 'desc'
+                    }
+                }
             },
         });
 
@@ -71,7 +107,41 @@ export const getCurrentUser = async (req: Request, res: Response) => {
             return res.status(404).json({ message: 'User not found.' });
         }
 
-        return res.status(200).json({ user });
+        // Calculate stats
+        const stats = {
+            totalSwaps: await prisma.swapRequest.count({
+                where: {
+                    OR: [
+                        { senderId: userId, status: 'ACCEPTED' },
+                        { receiverId: userId, status: 'ACCEPTED' }
+                    ]
+                }
+            }),
+            hoursSpent: await prisma.skillProgress.aggregate({
+                where: { userId },
+                _sum: { hoursSpent: true }
+            }).then((result: { _sum: { hoursSpent: number | null } }) => result._sum.hoursSpent || 0),
+            rating: Number(user.rating),
+            reviews: await prisma.feedback.count({
+                where: { revieweeId: userId }
+            }),
+            completionRate: await prisma.swapRequest.groupBy({
+                by: ['status'],
+                where: {
+                    OR: [
+                        { senderId: userId },
+                        { receiverId: userId }
+                    ]
+                },
+                _count: true
+            }).then((results: Array<{ status: string; _count: number }>) => {
+                const total = results.reduce((acc: number, curr: { _count: number }) => acc + curr._count, 0);
+                const completed = results.find((r: { status: string; _count: number }) => r.status === 'ACCEPTED')?._count || 0;
+                return total > 0 ? Math.round((completed / total) * 100) : 100;
+            })
+        };
+
+        return res.status(200).json({ user: { ...user, stats } });
     } catch (err) {
         console.error('Error fetching current user:', err);
         return res.status(500).json({ message: 'Internal server error.' });
@@ -80,11 +150,14 @@ export const getCurrentUser = async (req: Request, res: Response) => {
 
 export const updateUserProfile = async (req: Request, res: Response) => {
     try {
-        const userId = req.user?.id;
+        const userId = (req as any).user?.userId;
 
         const {
             firstName,
             lastName,
+            bio,
+            website,
+            phone,
             profilePicture,
             isPublic,
             address
@@ -104,6 +177,9 @@ export const updateUserProfile = async (req: Request, res: Response) => {
             data: {
                 firstName,
                 lastName,
+                bio,
+                website,
+                phone,
                 profilePicture,
                 isPublic,
                 ...(address && {
@@ -120,7 +196,10 @@ export const updateUserProfile = async (req: Request, res: Response) => {
                 })
             },
             include: {
-                location: true
+                location: true,
+                skillsOffered: true,
+                skillsWanted: true,
+                achievements: true
             }
         });
 
@@ -128,6 +207,122 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     } catch (err) {
         console.error('Error updating profile:', err);
         res.status(500).json({ message: 'Internal server error.' });
+    }
+};
+
+export const updateSkills = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user?.userId;
+        const { skills, type } = req.body;
+
+        if (!Array.isArray(skills)) {
+            return res.status(400).json({ message: 'Skills must be an array' });
+        }
+
+        const relationName = type === 'offered' ? 'skillsOffered' : 'skillsWanted';
+
+        // Get existing skills
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                [relationName]: true
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Delete removed skills
+        const existingSkills = user[relationName] as { id: string, name: string }[];
+        const skillsToDelete = existingSkills.filter(
+            existing => !skills.some(newSkill => newSkill.name === existing.name)
+        );
+
+        // Create new skills
+        const skillsToCreate = skills.filter(
+            newSkill => !existingSkills.some(existing => existing.name === newSkill.name)
+        );
+
+        // Update user with new skills
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                [relationName]: {
+                    deleteMany: {
+                        id: {
+                            in: skillsToDelete.map(skill => skill.id)
+                        }
+                    },
+                    create: skillsToCreate.map(skill => ({
+                        name: skill.name,
+                        skillProgress: {
+                            create: {
+                                level: skill.level || 'Beginner',
+                                progress: 0,
+                                hoursSpent: 0
+                            }
+                        }
+                    }))
+                }
+            },
+            include: {
+                skillsOffered: {
+                    include: {
+                        skillProgress: true
+                    }
+                },
+                skillsWanted: {
+                    include: {
+                        skillProgress: true
+                    }
+                }
+            }
+        });
+
+        return res.status(200).json({ user: updatedUser });
+    } catch (err) {
+        console.error('Error updating skills:', err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+export const updateSkillProgress = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user?.userId;
+        const { skillId, progress, level, hoursSpent } = req.body;
+
+        const skill = await prisma.skill.findUnique({
+            where: { id: skillId },
+            include: { skillProgress: true }
+        });
+
+        if (!skill || skill.userId !== userId) {
+            return res.status(404).json({ message: 'Skill not found' });
+        }
+
+        const updatedProgress = await prisma.skillProgress.upsert({
+            where: {
+                id: skill.skillProgress?.id || 'new',
+            },
+            create: {
+                userId,
+                skillName: skill.name,
+                progress: progress || 0,
+                level: level || 'Beginner',
+                hoursSpent: hoursSpent || 0
+            },
+            update: {
+                progress: progress !== undefined ? progress : undefined,
+                level: level || undefined,
+                hoursSpent: hoursSpent !== undefined ? hoursSpent : undefined
+            }
+        });
+
+        return res.status(200).json({ progress: updatedProgress });
+    } catch (err) {
+        console.error('Error updating skill progress:', err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
@@ -140,12 +335,10 @@ export const searchUsers = async (req: Request, res: Response) => {
             isPublic: true
         };
 
-        // Filter by user ID
         if (userId) {
             filters.id = String(userId);
         }
 
-        // Filter by first name (partial match, case-insensitive)
         if (firstName) {
             filters.firstName = {
                 contains: String(firstName),
@@ -153,7 +346,6 @@ export const searchUsers = async (req: Request, res: Response) => {
             };
         }
 
-        // Filter by location.city/state/country
         if (city || state || country) {
             filters.location = {
                 ...(city && {
@@ -177,7 +369,6 @@ export const searchUsers = async (req: Request, res: Response) => {
             };
         }
 
-        // If skill is provided, use `skillsOffered`
         if (skill) {
             filters.skillsOffered = {
                 some: {
@@ -198,7 +389,16 @@ export const searchUsers = async (req: Request, res: Response) => {
                 lastName: true,
                 profilePicture: true,
                 rating: true,
-                skillsOffered: { select: { name: true } },
+                skillsOffered: {
+                    select: {
+                        name: true,
+                        skillProgress: {
+                            select: {
+                                level: true
+                            }
+                        }
+                    }
+                },
                 location: {
                     select: {
                         city: true,
@@ -210,7 +410,7 @@ export const searchUsers = async (req: Request, res: Response) => {
             orderBy: {
                 updatedAt: 'desc'
             },
-            take: 50 // prevent overfetching
+            take: 50
         });
 
         res.status(200).json({ users });
@@ -222,7 +422,7 @@ export const searchUsers = async (req: Request, res: Response) => {
 
 export const updateUserStatus = async (req: Request, res: Response) => {
     try {
-        const userId = req.user?.id;
+        const userId = (req as any).user?.userId;
         const { isOnline, lastLogin } = req.body;
 
         const updated = await prisma.user.update({
@@ -245,10 +445,9 @@ export const updateUserStatus = async (req: Request, res: Response) => {
     }
 };
 
-
 export const changePassword = async (req: Request, res: Response) => {
     try {
-        const userId = req.user?.id;
+        const userId = (req as any).user?.userId;
         const { currentPassword, newPassword } = req.body;
 
         if (!currentPassword || !newPassword) {
@@ -281,7 +480,7 @@ export const changePassword = async (req: Request, res: Response) => {
 
 export const deleteUserAccount = async (req: Request, res: Response) => {
     try {
-        const userId = req.user?.id;
+        const userId = (req as any).user?.userId;
 
         await prisma.user.delete({
             where: { id: userId }

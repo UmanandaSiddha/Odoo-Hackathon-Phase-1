@@ -55,6 +55,9 @@ model User {
     isOnline          Boolean            @default(false)
     isBanned          Boolean            @default(false)
     rating            Decimal            @db.Decimal(10, 2)
+    bio               String?            @db.Text
+    website           String?
+    phone             String?
     location          Address?           @relation(fields: [addressId], references: [id])
     profilePicture    String?
     sessions          Session[]
@@ -79,7 +82,7 @@ model User {
     updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at")
     addressId         String?
     achievements      Achievement[]
-    skillProgress    SkillProgress[]
+    skillProgress     SkillProgress[]
 
     @@index([username])
     @@index([email])
