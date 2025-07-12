@@ -5,7 +5,7 @@ import {
     acceptSwapRequest,
     deleteSwapRequest,
     getMyRequests
-  } from '../controllers/dashboard.controller';
+} from '../controllers/dashboard.controller';
 
 const router = express.Router();
 
