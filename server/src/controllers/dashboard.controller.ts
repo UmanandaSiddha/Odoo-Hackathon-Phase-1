@@ -23,6 +23,9 @@ export const getDashboardUsers = catchAsyncErrors(async (req: Request, res: Resp
                     name: true
                 }
             },
+            skillsWanted: {
+                select: { name: true },
+            },
             location: {
                 select: {
                     city: true,
