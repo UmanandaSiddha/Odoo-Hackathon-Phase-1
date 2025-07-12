@@ -1,0 +1,262 @@
+# 🛠️ Backend — Skill Swap Platform (Hackathon '25)
+
+This is the **backend implementation** of the **Skill Swap Platform**, a real-time skill exchange application developed for Odoo Hackathon '25.
+
+---
+
+## 🔧 Tech Stack
+
+| Tool        | Purpose                                 |
+|-------------|------------------------------------------|
+| Node.js     | Runtime environment                      |
+| TypeScript  | Type-safe development                    |
+| Express.js  | Web framework                            |
+| PostgreSQL  | Relational database                      |
+| Prisma ORM  | Type-safe database queries               |
+| Redis       | Caching, session management              |
+| Socket.io   | Real-time messaging                      |
+| BullMQ      | Job queues for notification delivery     |
+| Multer      | File and image uploads                   |
+| JWT         | Authentication middleware                |
+| Zod         | Validation for request payloads          |
+| CORS, Helmet| Security middleware                      |
+| Dotenv      | Environment variable management          |
+
+---
+
+## 📁 Folder Structure
+
+\`\`\`
+/backend
+│
+├── src/
+│   ├── controllers/       # Business logic for each route
+│   ├── middlewares/       # Auth, error handlers, validators
+│   ├── models/            # Prisma schema (database models)
+│   ├── routes/            # All REST API routes
+│   ├── services/          # Socket, Queue, Email, Uploads, Redis
+│   ├── utils/             # Helpers, constants
+│   ├── jobs/              # Notification queues and workers
+│   ├── sockets/           # Socket event listeners and emitters
+│   ├── index.ts           # App entrypoint
+│   └── server.ts          # Server + Socket.IO boot
+│
+├── prisma/
+│   ├── schema.prisma      # Database schema
+│   └── seed.ts            # Optional seed data
+│
+├── uploads/               # Static uploaded files
+├── .env                   # Environment variables
+├── tsconfig.json          # TypeScript configuration
+└── package.json           # NPM dependencies
+\`\`\`
+
+---
+
+## 🌐 Environment Variables (\`.env\`)
+
+\`\`\`env
+DATABASE_URL="postgresql://<user>:<password>@localhost:5432/skillswap"
+JWT_SECRET="your_jwt_secret"
+REDIS_URL="redis://localhost:6379"
+PORT=5000
+CLIENT_URL=http://localhost:3000
+\`\`\`
+
+---
+
+## 🧩 Prisma Models
+
+\`\`\`prisma
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  password     String
+  profilePhoto String?  // Optional
+  location     String?  // Optional
+  isPublic     Boolean  @default(true)
+  skillsOffered Skill[]
+  skillsWanted Skill[]
+  availability String[]
+  ratings      Rating[]
+  swapRequests SwapRequest[] @relation("Sender")
+  swapsReceived SwapRequest[] @relation("Receiver")
+  createdAt    DateTime @default(now())
+}
+
+model Skill {
+  id      String @id @default(cuid())
+  name    String
+  userId  String
+  type    String // 'offered' or 'wanted'
+  user    User   @relation(fields: [userId], references: [id])
+}
+
+model SwapRequest {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  skillOffered String
+  skillWanted String
+  status     String   @default("pending") // pending, accepted, rejected
+  createdAt  DateTime @default(now())
+  sender     User     @relation("Sender", fields: [senderId], references: [id])
+  receiver   User     @relation("Receiver", fields: [receiverId], references: [id])
+}
+
+model Rating {
+  id         String   @id @default(cuid())
+  reviewerId String
+  revieweeId String
+  comment    String?
+  rating     Int      // 1 to 5
+  reviewer   User     @relation("Reviewer", fields: [reviewerId], references: [id])
+  reviewee   User     @relation("Reviewee", fields: [revieweeId], references: [id])
+}
+\`\`\`
+
+---
+
+## 🛡️ Middlewares
+
+### \`authMiddleware.ts\`
+- Verifies JWT token and attaches \`req.user\`
+- Returns 401 if token is invalid or missing
+
+### \`errorMiddleware.ts\`
+- Central error handler for all controllers
+- Handles Zod validation errors, Prisma errors, etc.
+
+### \`validateMiddleware.ts\`
+- Takes a Zod schema and validates \`req.body\`
+- Returns 422 with error messages on failure
+
+---
+
+## 🔑 JWT Authentication
+
+- Register → \`/api/auth/register\`
+- Login → \`/api/auth/login\` (Returns JWT)
+- All protected routes require \`Authorization: Bearer <token>\`
+
+---
+
+## 🌐 REST API Routes (High-Level)
+
+\`\`\`
+POST   /auth/register       # Register new user
+POST   /auth/login          # Login
+
+GET    /users/me            # Get own profile
+PATCH  /users/me            # Update own profile
+GET    /users               # Public user search (by skill, location)
+GET    /users/:id           # Get public profile
+
+POST   /skills              # Add skill (offered or wanted)
+DELETE /skills/:id          # Delete skill
+
+POST   /swaps               # Send swap request
+GET    /swaps               # View own sent/received requests
+PATCH  /swaps/:id           # Accept/Reject request
+DELETE /swaps/:id           # Delete request
+
+POST   /ratings             # Give rating
+GET    /ratings/:userId     # Fetch ratings for a user
+
+POST   /upload              # Upload file (image or doc)
+
+GET    /notifications       # Get user's notifications
+\`\`\`
+
+---
+
+## 🔴 Redis Usage
+
+- Caching public user profiles & skill search
+- Session store (optional if using JWT only)
+- Real-time data sync (notifications)
+
+---
+
+## 📡 WebSockets (Socket.IO)
+
+**Events**
+- \`connect\`: User connects (identified via JWT)
+- \`message\`: Send/receive real-time chat
+- \`swap-update\`: Real-time swap request updates
+- \`notify\`: Push new notification (swap accepted, rating given, etc.)
+
+**Socket Auth**
+- JWT passed via socket handshake
+
+---
+
+## 📤 File Uploads
+
+- Use \`Multer\` middleware
+- Limit file size and type (JPG, PNG, PDF)
+- Uploads stored in \`/uploads\`
+- Serve using static express middleware
+
+---
+
+## 📬 Notification Queues (BullMQ + Redis)
+
+- Swap accepted
+- New rating received
+- Mention/tag in message
+
+Jobs are added to queue and processed by workers:
+\`\`\`ts
+queue.add('notifyUser', { userId, type, data });
+\`\`\`
+
+Workers run in \`/src/jobs/worker.ts\`:
+\`\`\`ts
+notifyQueue.process(async job => {
+  const { userId, type, data } = job.data;
+  // Save to DB or emit via Socket.IO
+});
+\`\`\`
+
+---
+
+## 🧪 Testing & Linting
+
+- Use **ESLint** for linting
+- Use **Zod** for schema validation
+- Optional: Jest or Supertest for route testing
+
+---
+
+## 🚀 Quick Start
+
+\`\`\`bash
+# Install dependencies
+npm install
+
+# Setup DB
+npx prisma migrate dev
+npx prisma generate
+
+# Run Redis
+redis-server
+
+# Start server
+npm run dev
+\`\`\`
+
+---
+
+## 🔐 Admin Features (Future Scope)
+- Ban user
+- Moderate inappropriate skill entries
+- View all users & swap logs
+- Send platform-wide messages
+- Download reports
+
+---
+
+> Built with ❤️ for Odoo Hackathon '25.  
+> Backend powered by Node.js, TypeScript, Prisma & Redis.

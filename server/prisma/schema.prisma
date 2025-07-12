@@ -1,61 +1,58 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// This is your Prisma schema file
 
 generator client {
-    provider = "prisma-client-js"
-    output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
-}
-
-enum UserRole {
-    ADMIN
-    USER
-}
-
-enum Gender {
-    MALE
-    FEMALE
-    OTHER
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-    id               String         @id @default(uuid())
-    fullName         String
-    email            String         @unique
-    password         String
-    gender           Gender?
-    profileImage     String?
-    dateOfBirth      DateTime?
-    lastLogin        DateTime?
-    role             UserRole       @default(USER)
-    isVerified       Boolean        @default(false)
-    isOnline         Boolean        @default(false)
-    notification     Notification[]
-    oneTimePassword  String?
-    oneTimeExpire    DateTime?
-    resetToken       String?
-    resetTokenExpire DateTime?
-    createdAt        DateTime       @default(now()) @map("created_at")
-    updatedAt        DateTime       @default(now()) @updatedAt @map("updated_at")
-
-    @@index([email])
-    @@index([role])
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  password     String
+  profilePhoto String?
+  location     String?
+  isPublic     Boolean  @default(true)
+  skillsOffered Skill[] @relation("OfferedSkills")
+  skillsWanted  Skill[] @relation("WantedSkills")
+  availability String[]
+  ratingsGiven   Rating[] @relation("Reviewer")
+  ratingsReceived Rating[] @relation("Reviewee")
+  swapRequests   SwapRequest[] @relation("Sender")
+  swapsReceived  SwapRequest[] @relation("Receiver")
+  createdAt    DateTime @default(now())
 }
 
-model Notification {
-    id        String   @id @default(uuid())
-    userId    String
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    isRead    Boolean  @default(false)
-    content   String
-    metadata  Json
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+model Skill {
+  id      String @id @default(cuid())
+  name    String
+  type    String // 'offered' or 'wanted'
+  user    User   @relation(fields: [userId], references: [id], name: type == "offered" ? "OfferedSkills" : "WantedSkills")
+  userId  String
+}
+
+model SwapRequest {
+  id           String   @id @default(cuid())
+  senderId     String
+  receiverId   String
+  skillOffered String
+  skillWanted  String
+  status       String   @default("pending") // pending, accepted, rejected
+  createdAt    DateTime @default(now())
+  sender       User     @relation("Sender", fields: [senderId], references: [id])
+  receiver     User     @relation("Receiver", fields: [receiverId], references: [id])
+}
+
+model Rating {
+  id         String   @id @default(cuid())
+  reviewerId String
+  revieweeId String
+  comment    String?
+  rating     Int      // 1 to 5
+  reviewer   User     @relation("Reviewer", fields: [reviewerId], references: [id])
+  reviewee   User     @relation("Reviewee", fields: [revieweeId], references: [id])
 }
