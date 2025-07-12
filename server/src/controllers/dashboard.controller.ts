@@ -57,7 +57,7 @@ export const getDashboardUsers = catchAsyncErrors(async (req: Request, res: Resp
 
 // POST /api/requests - Send swap request
 export const sendSwapRequest = catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    const senderId = req.user?.id;
+    const senderId = req.user?.userId;
 
     if (!senderId) {
         return next(new ErrorHandler('Unauthorized: User ID missing', StatusCodes.UNAUTHORIZED));

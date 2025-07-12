@@ -6,7 +6,8 @@ import bcrypt from 'bcryptjs';
 
 export const getCurrentUser = async (req: Request, res: Response) => {
     try {
-        const userId = req.user?.id;
+        const userId = req.user?.userId;
+        console.log(userId)
 
         if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
@@ -80,7 +81,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
 
 export const updateUserProfile = async (req: Request, res: Response) => {
     try {
-        const userId = req.user?.id;
+        const userId = req.user?.userId;
 
         const {
             firstName,
@@ -222,7 +223,7 @@ export const searchUsers = async (req: Request, res: Response) => {
 
 export const updateUserStatus = async (req: Request, res: Response) => {
     try {
-        const userId = req.user?.id;
+        const userId = req.user?.userId;
         const { isOnline, lastLogin } = req.body;
 
         const updated = await prisma.user.update({
@@ -248,7 +249,7 @@ export const updateUserStatus = async (req: Request, res: Response) => {
 
 export const changePassword = async (req: Request, res: Response) => {
     try {
-        const userId = req.user?.id;
+        const userId = req.user?.userId;
         const { currentPassword, newPassword } = req.body;
 
         if (!currentPassword || !newPassword) {
@@ -281,7 +282,7 @@ export const changePassword = async (req: Request, res: Response) => {
 
 export const deleteUserAccount = async (req: Request, res: Response) => {
     try {
-        const userId = req.user?.id;
+        const userId = req.user?.userId;
 
         await prisma.user.delete({
             where: { id: userId }

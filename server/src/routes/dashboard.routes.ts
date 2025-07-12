@@ -6,11 +6,15 @@ import {
     deleteSwapRequest,
     getMyRequests
 } from '../controllers/dashboard.controller';
+import { authenticateUser } from '../middlewares/token.middleware';
+
 
 const router = express.Router();
 
+router.use(authenticateUser);
+
 //  Dashboard view - public users (GET)
-router.get('/dashboard', getDashboardUsers);
+router.get('/', getDashboardUsers);
 
 //  View all sent/received requests (GET)
 router.get('/me', getMyRequests);

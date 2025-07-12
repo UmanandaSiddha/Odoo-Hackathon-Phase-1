@@ -6,7 +6,7 @@ import { StatusCodes } from 'http-status-codes';
 
 // POST /api/feedback/:userId - Give feedback to a user
 export const giveFeedback = catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    const reviewerId = req.user?.id;
+    const reviewerId = req.user?.userId;
     const { userId: revieweeId } = req.params;
     const { rating, comment } = req.body;
 
@@ -48,7 +48,7 @@ export const giveFeedback = catchAsyncErrors(async (req: Request, res: Response,
 
 // DELETE /api/feedback/:feedbackId - Delete feedback
 export const deleteFeedback = catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    const reviewerId = req.user?.id;
+    const reviewerId = req.user?.userId;
     const { feedbackId } = req.params;
 
     const feedback = await prisma.feedback.findUnique({
