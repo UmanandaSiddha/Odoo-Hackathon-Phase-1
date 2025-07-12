@@ -8,6 +8,9 @@ import {
 import { Prisma } from "@prisma/client";
 import { saveSessionInDB } from "../../utils/auth/save.session";
 import { prisma } from "../..";
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 interface INewUserProps {
   id: string;

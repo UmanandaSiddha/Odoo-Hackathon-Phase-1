@@ -4,6 +4,9 @@ import bcrypt from 'bcryptjs';
 import { prisma } from "../..";
 import { accessTokenGenerator, refreshTokenGenerator } from "../../utils/auth/generate.token";
 import { saveSessionInDB } from "../../utils/auth/save.session";
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // Validation schema for registration
 const loginSchema = z.object({
