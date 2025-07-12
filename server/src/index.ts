@@ -1,49 +1,33 @@
-import express from 'express';
+import app from "./app";
+// import express from 'express';
 import { createServer } from 'http';
-import { Server } from 'socket.io';
-import cors from 'cors';
+import { SocketServer } from './services/socket.service';
+import { redisManager } from './services/redis.manager';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 
-// Load environment variables
 dotenv.config();
 
-// Initialize Express app
-const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: process.env.CLIENT_URL,
-    methods: ['GET', 'POST']
-  }
-});
-
-// Initialize Prisma
 export const prisma = new PrismaClient();
 
-// Middleware
-app.use(express.json());
-app.use(cors({
-  origin: process.env.CLIENT_URL,
-  credentials: true
-}));
+const httpServer = createServer(app);
 
-// Basic health check route
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'Server is healthy.' });
 });
 
-// Socket.IO connection handler
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
+const socketServer = new SocketServer(httpServer);
+socketServer.initialize();
 
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-  });
-});
-
-// Start server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 httpServer.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🚀 Server is running on http://localhost:${PORT}`);
+});
+
+process.on('SIGINT', () => {
+    console.log('🔌 Shutting down server...');
+    httpServer.close(() => {
+        redisManager.quit();
+        process.exit(0);
+    });
 });
