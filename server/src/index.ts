@@ -18,6 +18,8 @@ app.get('/', (req, res) => {
 const socketServer = new SocketServer(httpServer);
 socketServer.initialize();
 
+app.set('socketServer', socketServer);
+
 const PORT = process.env.PORT || 8000;
 
 async function startServer() {

@@ -66,7 +66,7 @@ export class SocketServer {
         }
     }
 
-    private async emitToUser(recipientId: string, event: string, payload: any): Promise<void> {
+    async emitToUser(recipientId: string, event: string, payload: any): Promise<void> {
         const userSockets = await redisManager.getUserSockets(recipientId);
         if (userSockets && userSockets.length > 0) {
             userSockets.forEach(socketId => {
