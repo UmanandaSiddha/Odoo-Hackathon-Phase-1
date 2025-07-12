@@ -1,16 +1,20 @@
-import { ThemeProvider } from './context/ThemeContext'
-import { RouterProvider } from 'react-router-dom'
-import { router } from './routes'
-import { Toaster } from 'sonner'
-import './App.css'
+import { ThemeProvider } from '@/context/ThemeContext';
+import { AuthProvider } from '@/features/auth/AuthContext';
+import { ToastProvider } from '@/components/ui/toast-provider';
+import { RouterProvider } from 'react-router-dom';
+import { router } from '@/routes';
+import './App.css';
 
 function App() {
   return (
     <ThemeProvider>
-      <RouterProvider router={router} />
-      <Toaster richColors position="top-right" />
+      <AuthProvider>
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
+      </AuthProvider>
     </ThemeProvider>
-  )
+  );
 }
 
-export default App
+export default App;
