@@ -1,14 +1,19 @@
-import { DashboardLayout } from '../layouts/DashboardLayout';
+import { Navbar } from '../components/ui/navbar'
+import { Hero } from '../components/ui/hero'
+import { Features } from '../components/ui/features'
+import { FAQ } from '../components/ui/faq'
+import { Contact } from '../components/ui/contact'
+import { Footer } from '../components/ui/footer'
 
-export const HomePage = () => {
+export const Home = () => {
   return (
-    <DashboardLayout>
-      <div className="bg-white shadow rounded-lg p-6">
-        <h1 className="text-2xl font-bold text-gray-900">Welcome to Skill Swap</h1>
-        <p className="mt-4 text-gray-600">
-          Connect with others to exchange skills and knowledge.
-        </p>
-      </div>
-    </DashboardLayout>
-  );
-}; 
+    <main className="min-h-screen bg-background">
+      <Navbar />
+      <Hero />
+      <Features />
+      <FAQ />
+      <Contact />
+      <Footer />
+    </main>
+  )
+} 

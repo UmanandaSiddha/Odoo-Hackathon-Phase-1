@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="600" rx="12" fill="#1A1A1A"/>
+  
+  <!-- Header -->
+  <g transform="translate(40, 40)">
+    <rect width="720" height="60" rx="12" fill="#252525"/>
+    <text x="40" y="35" fill="white" font-family="Inter" font-size="18" font-weight="bold">Learning Progress</text>
+    <rect x="520" y="15" width="180" height="30" rx="15" fill="#7E22CE"/>
+    <text x="610" y="35" fill="white" font-family="Inter" font-size="14" text-anchor="middle">Last 30 Days</text>
+  </g>
+  
+  <!-- Progress Overview -->
+  <g transform="translate(40, 120)">
+    <rect width="720" height="100" rx="12" fill="#252525"/>
+    <!-- Progress Bar -->
+    <rect x="40" y="30" width="640" height="8" rx="4" fill="#333"/>
+    <rect x="40" y="30" width="448" height="8" rx="4" fill="#9333EA"/>
+    <!-- Stats -->
+    <text x="40" y="70" fill="#E5E7EB" font-family="Inter" font-size="14">70% Complete</text>
+    <text x="200" y="70" fill="#E5E7EB" font-family="Inter" font-size="14">12 Skills Learned</text>
+    <text x="400" y="70" fill="#E5E7EB" font-family="Inter" font-size="14">8 Sessions Completed</text>
+  </g>
+
+  <!-- Task List -->
+  <g transform="translate(40, 240)">
+    <!-- Completed Task -->
+    <rect width="720" height="70" rx="12" fill="#252525"/>
+    <circle cx="80" cy="35" r="20" fill="#22C55E"/>
+    <text x="80" y="40" fill="white" font-family="Inter" font-size="16" text-anchor="middle">✓</text>
+    <text x="120" y="40" fill="#E5E7EB" font-family="Inter" font-size="14">React Basics</text>
+    <rect x="520" y="25" width="160" height="20" rx="10" fill="#333"/>
+    <text x="600" y="40" fill="#E5E7EB" font-family="Inter" font-size="12" text-anchor="middle">Completed 2 days ago</text>
+
+    <!-- In Progress Task -->
+    <g transform="translate(0, 90)">
+      <rect width="720" height="70" rx="12" fill="#252525"/>
+      <circle cx="80" cy="35" r="20" fill="#EAB308"/>
+      <text x="80" y="40" fill="white" font-family="Inter" font-size="16" text-anchor="middle">→</text>
+      <text x="120" y="40" fill="#E5E7EB" font-family="Inter" font-size="14">Advanced Hooks</text>
+      <rect x="520" y="25" width="160" height="20" rx="10" fill="#333"/>
+      <text x="600" y="40" fill="#E5E7EB" font-family="Inter" font-size="12" text-anchor="middle">70% Complete</text>
+    </g>
+
+    <!-- Upcoming Task -->
+    <g transform="translate(0, 180)">
+      <rect width="720" height="70" rx="12" fill="#252525"/>
+      <circle cx="80" cy="35" r="20" fill="#7E22CE"/>
+      <text x="80" y="40" fill="white" font-family="Inter" font-size="16" text-anchor="middle">•</text>
+      <text x="120" y="40" fill="#E5E7EB" font-family="Inter" font-size="14">State Management</text>
+      <rect x="520" y="25" width="160" height="20" rx="10" fill="#333"/>
+      <text x="600" y="40" fill="#E5E7EB" font-family="Inter" font-size="12" text-anchor="middle">Starts next week</text>
+    </g>
+  </g>
+
+  <!-- Achievement Section -->
+  <g transform="translate(40, 480)">
+    <rect width="720" height="80" rx="12" fill="#252525"/>
+    <!-- Badges -->
+    <circle cx="80" cy="40" r="25" fill="#9333EA"/>
+    <text x="80" y="45" fill="white" font-family="Inter" font-size="12" text-anchor="middle">PRO</text>
+    
+    <circle cx="160" cy="40" r="25" fill="#7E22CE"/>
+    <text x="160" y="45" fill="white" font-family="Inter" font-size="12" text-anchor="middle">10x</text>
+    
+    <circle cx="240" cy="40" r="25" fill="#9333EA"/>
+    <text x="240" y="45" fill="white" font-family="Inter" font-size="12" text-anchor="middle">MVP</text>
+    
+    <text x="600" y="45" fill="#E5E7EB" font-family="Inter" font-size="14" text-anchor="middle">3 Achievements Unlocked</text>
+  </g>
+</svg> 

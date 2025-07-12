@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="600" rx="12" fill="#1A1A1A"/>
+  
+  <!-- User Skills Profile -->
+  <g transform="translate(40, 40)">
+    <rect width="340" height="240" rx="12" fill="#252525"/>
+    <rect x="20" y="20" width="120" height="24" rx="12" fill="#9333EA"/>
+    <text x="45" y="36" fill="white" font-family="Inter" font-size="12">YOUR SKILLS</text>
+    <!-- Skills List -->
+    <rect x="20" y="60" width="280" height="32" rx="6" fill="#333"/>
+    <text x="32" y="82" fill="#E5E7EB" font-family="Inter" font-size="14">JavaScript Development</text>
+    <rect x="20" y="108" width="240" height="24" rx="6" fill="#333"/>
+    <text x="32" y="125" fill="#E5E7EB" font-family="Inter" font-size="12">3 years experience</text>
+    <!-- Skill Tags -->
+    <rect x="20" y="148" width="80" height="24" rx="12" fill="#7E22CE"/>
+    <text x="35" y="165" fill="white" font-family="Inter" font-size="12">React</text>
+    <rect x="110" y="148" width="90" height="24" rx="12" fill="#7E22CE"/>
+    <text x="125" y="165" fill="white" font-family="Inter" font-size="12">Node.js</text>
+    <!-- Learning Goals -->
+    <rect x="20" y="188" width="120" height="24" rx="12" fill="#9333EA"/>
+    <text x="35" y="205" fill="white" font-family="Inter" font-size="12">Want to Learn:</text>
+    <rect x="150" y="188" width="90" height="24" rx="12" fill="#7E22CE"/>
+    <text x="165" y="205" fill="white" font-family="Inter" font-size="12">Python</text>
+  </g>
+
+  <!-- Match Profile -->
+  <g transform="translate(420, 40)">
+    <rect width="340" height="240" rx="12" fill="#252525"/>
+    <rect x="20" y="20" width="120" height="24" rx="12" fill="#9333EA"/>
+    <text x="45" y="36" fill="white" font-family="Inter" font-size="12">PERFECT MATCH</text>
+    <!-- Profile Info -->
+    <circle cx="60" cy="80" r="30" fill="#7E22CE"/>
+    <text x="45" y="88" fill="white" font-family="Inter" font-size="24">PY</text>
+    <rect x="100" y="60" width="160" height="24" rx="6" fill="#333"/>
+    <text x="112" y="77" fill="#E5E7EB" font-family="Inter" font-size="14">Python Expert</text>
+    <rect x="100" y="96" width="120" height="20" rx="6" fill="#333"/>
+    <text x="112" y="111" fill="#E5E7EB" font-family="Inter" font-size="12">Wants to learn JS</text>
+    <!-- Match Score -->
+    <rect x="20" y="140" width="280" height="40" rx="8" fill="#333"/>
+    <text x="32" y="165" fill="#E5E7EB" font-family="Inter" font-size="14">95% Match Score</text>
+    <!-- Exchange Tags -->
+    <rect x="20" y="188" width="140" height="24" rx="12" fill="#7E22CE"/>
+    <text x="35" y="205" fill="white" font-family="Inter" font-size="12">Python for JS/React</text>
+  </g>
+
+  <!-- Connection Lines -->
+  <path d="M 380 160 C 420 160, 380 160, 420 160" stroke="#9333EA" stroke-width="4"/>
+  
+  <!-- Match Status -->
+  <g transform="translate(40, 320)">
+    <rect width="720" height="240" rx="12" fill="#252525"/>
+    <!-- Status Steps -->
+    <circle cx="120" cy="60" r="30" fill="#9333EA"/>
+    <text x="120" y="65" fill="white" font-family="Inter" font-size="12" text-anchor="middle">Match</text>
+    <line x1="150" y1="60" x2="250" y2="60" stroke="#333" stroke-width="4"/>
+    <circle cx="280" cy="60" r="30" fill="#7E22CE"/>
+    <text x="280" y="65" fill="white" font-family="Inter" font-size="12" text-anchor="middle">Connect</text>
+    <line x1="310" y1="60" x2="410" y2="60" stroke="#333" stroke-width="4"/>
+    <circle cx="440" cy="60" r="30" fill="#7E22CE"/>
+    <text x="440" y="65" fill="white" font-family="Inter" font-size="12" text-anchor="middle">Learn</text>
+    <line x1="470" y1="60" x2="570" y2="60" stroke="#333" stroke-width="4"/>
+    <circle cx="600" cy="60" r="30" fill="#7E22CE"/>
+    <text x="600" y="65" fill="white" font-family="Inter" font-size="12" text-anchor="middle">Grow</text>
+    
+    <!-- Status Text -->
+    <rect x="40" y="120" width="640" height="80" rx="8" fill="#333"/>
+    <text x="360" y="165" fill="#E5E7EB" font-family="Inter" font-size="14" text-anchor="middle">Find your perfect learning partner based on complementary skills</text>
+    <text x="360" y="185" fill="#E5E7EB" font-family="Inter" font-size="12" text-anchor="middle">Our AI matching system ensures meaningful skill exchanges</text>
+  </g>
+</svg> 

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="600" rx="12" fill="#1A1A1A"/>
+  
+  <!-- Task Cards -->
+  <g transform="translate(40, 40)">
+    <!-- Task Request Card -->
+    <rect width="340" height="240" rx="12" fill="#252525"/>
+    <rect x="20" y="20" width="120" height="24" rx="12" fill="#9333EA"/>
+    <text x="45" y="36" fill="white" font-family="Inter" font-size="12">HELP NEEDED</text>
+    <rect x="20" y="60" width="280" height="32" rx="6" fill="#333"/>
+    <text x="32" y="82" fill="#E5E7EB" font-family="Inter" font-size="14">Website Development Help</text>
+    <rect x="20" y="108" width="240" height="24" rx="6" fill="#333"/>
+    <text x="32" y="125" fill="#E5E7EB" font-family="Inter" font-size="12">Need help with React components</text>
+    <rect x="20" y="144" width="200" height="24" rx="6" fill="#333"/>
+    <text x="32" y="161" fill="#E5E7EB" font-family="Inter" font-size="12">2-3 hours estimated</text>
+    <!-- Skills Tags -->
+    <rect x="20" y="188" width="80" height="24" rx="12" fill="#7E22CE"/>
+    <text x="35" y="205" fill="white" font-family="Inter" font-size="12">React</text>
+    <rect x="110" y="188" width="90" height="24" rx="12" fill="#7E22CE"/>
+    <text x="125" y="205" fill="white" font-family="Inter" font-size="12">TypeScript</text>
+  </g>
+
+  <!-- Helper Profile -->
+  <g transform="translate(420, 40)">
+    <rect width="340" height="240" rx="12" fill="#252525"/>
+    <!-- Profile Header -->
+    <circle cx="60" cy="60" r="40" fill="#7E22CE"/>
+    <text x="45" y="68" fill="white" font-family="Inter" font-size="24">JS</text>
+    <rect x="120" y="40" width="160" height="24" rx="6" fill="#333"/>
+    <text x="132" y="57" fill="#E5E7EB" font-family="Inter" font-size="14">John Smith</text>
+    <rect x="120" y="76" width="120" height="20" rx="6" fill="#333"/>
+    <text x="132" y="91" fill="#E5E7EB" font-family="Inter" font-size="12">Full Stack Dev</text>
+    <!-- Rating Stars -->
+    <g transform="translate(120, 108)">
+      <circle cx="12" cy="12" r="12" fill="#EAB308"/>
+      <circle cx="44" cy="12" r="12" fill="#EAB308"/>
+      <circle cx="76" cy="12" r="12" fill="#EAB308"/>
+      <circle cx="108" cy="12" r="12" fill="#EAB308"/>
+      <circle cx="140" cy="12" r="12" fill="#EAB308"/>
+      <text x="76" y="40" fill="#E5E7EB" font-family="Inter" font-size="12" text-anchor="middle">5.0 (24 reviews)</text>
+    </g>
+    <!-- Skills -->
+    <rect x="20" y="188" width="90" height="24" rx="12" fill="#9333EA"/>
+    <text x="35" y="205" fill="white" font-family="Inter" font-size="12">React Pro</text>
+    <rect x="120" y="188" width="80" height="24" rx="12" fill="#9333EA"/>
+    <text x="135" y="205" fill="white" font-family="Inter" font-size="12">TS Pro</text>
+  </g>
+
+  <!-- Connection Lines -->
+  <path d="M 380 160 C 420 160, 380 160, 420 160" stroke="#9333EA" stroke-width="4"/>
+  
+  <!-- Task Status -->
+  <g transform="translate(40, 320)">
+    <rect width="720" height="240" rx="12" fill="#252525"/>
+    <!-- Progress Steps -->
+    <circle cx="120" cy="60" r="30" fill="#9333EA"/>
+    <text x="120" y="65" fill="white" font-family="Inter" font-size="12" text-anchor="middle">Post</text>
+    <line x1="150" y1="60" x2="250" y2="60" stroke="#333" stroke-width="4"/>
+    <circle cx="280" cy="60" r="30" fill="#7E22CE"/>
+    <text x="280" y="65" fill="white" font-family="Inter" font-size="12" text-anchor="middle">Match</text>
+    <line x1="310" y1="60" x2="410" y2="60" stroke="#333" stroke-width="4"/>
+    <circle cx="440" cy="60" r="30" fill="#7E22CE"/>
+    <text x="440" y="65" fill="white" font-family="Inter" font-size="12" text-anchor="middle">Help</text>
+    <line x1="470" y1="60" x2="570" y2="60" stroke="#333" stroke-width="4"/>
+    <circle cx="600" cy="60" r="30" fill="#7E22CE"/>
+    <text x="600" y="65" fill="white" font-family="Inter" font-size="12" text-anchor="middle">Done</text>
+    
+    <!-- Status Text -->
+    <rect x="40" y="120" width="640" height="80" rx="8" fill="#333"/>
+    <text x="360" y="165" fill="#E5E7EB" font-family="Inter" font-size="14" text-anchor="middle">Track progress in real-time as helpers assist with your tasks</text>
+    <text x="360" y="185" fill="#E5E7EB" font-family="Inter" font-size="12" text-anchor="middle">Get notifications at each step of the process</text>
+  </g>
+</svg> 
