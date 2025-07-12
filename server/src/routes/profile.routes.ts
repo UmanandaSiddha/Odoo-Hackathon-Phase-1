@@ -7,18 +7,18 @@ import {
     changePassword,
     deleteUserAccount
 } from '../controllers/profile.controller';
-// import { verifyAuth } from '@/middleware/verifyAuth';
+import { authenticateUser } from '../middlewares/token.middleware';
 
 const router = express.Router();
 
 
-router.get('/getUser', getCurrentUser);               // GET current user
-router.patch('/update', updateUserProfile);          // PATCH profile update
-router.patch('/update/status', updateUserStatus);    // PATCH isOnline / lastLogin
-router.patch('/update/password', changePassword);    // PATCH change password
-router.delete('/delete', deleteUserAccount);         // DELETE account
+router.get('/getUser/:userId', authenticateUser, getCurrentUser);               // GET current user
+router.patch('/update/:userId', authenticateUser, updateUserProfile);          // PATCH profile update
+router.patch('/update/status/:userId', authenticateUser, updateUserStatus);    // PATCH isOnline / lastLogin
+router.patch('/update/password/:userId', authenticateUser, changePassword);    // PATCH change password
+router.delete('/delete/:userId', authenticateUser, deleteUserAccount);         // DELETE account
 
 
-router.get('/', searchUsers);                                // GET user search by skill, naprofile, etc.
+router.get('/skill/:userId', authenticateUser, searchUsers);                                // GET user search by skill, naprofile, etc.
 
 export default router;
