@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { Button } from './button'
 import { ThemeToggle } from './theme-toggle'
@@ -14,7 +14,6 @@ import {
   ChevronRight,
   Menu
 } from 'lucide-react'
-import { useState } from 'react'
 import { useAuth } from '@/features/auth/AuthContext'
 
 interface NavItemProps {
@@ -22,6 +21,11 @@ interface NavItemProps {
   icon: React.ElementType
   label: string
   isCollapsed: boolean
+}
+
+interface SidebarProps {
+  isCollapsed: boolean
+  onCollapsedChange: (collapsed: boolean) => void
 }
 
 const NavItem = ({ to, icon: Icon, label, isCollapsed }: NavItemProps) => {
@@ -51,9 +55,18 @@ const NavItem = ({ to, icon: Icon, label, isCollapsed }: NavItemProps) => {
         />
       )}
       <Icon className="h-5 w-5" />
-      {!isCollapsed && (
-        <span className="text-sm font-medium">{label}</span>
-      )}
+      <AnimatePresence>
+        {!isCollapsed && (
+          <motion.span 
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            className="text-sm font-medium"
+          >
+            {label}
+          </motion.span>
+        )}
+      </AnimatePresence>
       {isCollapsed && (
         <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
           {label}
@@ -63,8 +76,7 @@ const NavItem = ({ to, icon: Icon, label, isCollapsed }: NavItemProps) => {
   )
 }
 
-export const Sidebar = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+export const Sidebar = ({ isCollapsed, onCollapsedChange }: SidebarProps) => {
   const { logout } = useAuth()
 
   const navItems = [
@@ -76,7 +88,7 @@ export const Sidebar = () => {
   ]
 
   const sidebarVariants = {
-    expanded: { width: '240px' },
+    expanded: { width: '280px' },
     collapsed: { width: '70px' }
   }
 
@@ -107,9 +119,18 @@ export const Sidebar = () => {
           isCollapsed ? 'justify-center' : 'px-2'
         )}>
           <img src="/logo.svg" alt="Skill Swap" className="h-6 w-6" />
-          {!isCollapsed && (
-            <span className="font-bold text-lg">Skill Swap</span>
-          )}
+          <AnimatePresence>
+            {!isCollapsed && (
+              <motion.span 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="font-bold text-lg"
+              >
+                Skill Swap
+              </motion.span>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Navigation */}
@@ -125,11 +146,28 @@ export const Sidebar = () => {
 
         {/* Bottom Actions */}
         <div className="space-y-2">
-          <ThemeToggle />
+          <div className={cn(
+            'flex items-center gap-2',
+            isCollapsed ? 'justify-center' : 'px-2'
+          )}>
+            <ThemeToggle />
+            <AnimatePresence>
+              {!isCollapsed && (
+                <motion.span 
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  className="text-sm text-muted-foreground"
+                >
+                  Mode
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={() => onCollapsedChange(!isCollapsed)}
             className="w-full flex items-center justify-center"
           >
             {isCollapsed ? (
@@ -142,12 +180,22 @@ export const Sidebar = () => {
             variant="ghost"
             className={cn(
               'w-full flex items-center gap-2 text-destructive hover:text-destructive hover:bg-destructive/10',
-              isCollapsed ? 'justify-center' : 'justify-start'
+              isCollapsed ? 'justify-center' : 'justify-start px-3'
             )}
             onClick={logout}
           >
             <LogOut className="h-5 w-5" />
-            {!isCollapsed && <span>Logout</span>}
+            <AnimatePresence>
+              {!isCollapsed && (
+                <motion.span 
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                >
+                  Logout
+                </motion.span>
+              )}
+            </AnimatePresence>
           </Button>
         </div>
       </motion.aside>
