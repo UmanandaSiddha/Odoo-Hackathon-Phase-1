@@ -14,6 +14,8 @@ import { lazy } from 'react'
 const Dashboard = lazy(() => import('@/pages/dashboard/Dashboard'))
 const Profile = lazy(() => import('@/pages/dashboard/Profile'))
 const Swaps = lazy(() => import('@/pages/dashboard/Swaps'))
+const NewSwap = lazy(() => import('@/pages/dashboard/NewSwap'))
+const Chat = lazy(() => import('@/pages/dashboard/Chat'))
 const Notifications = lazy(() => import('@/pages/dashboard/Notifications'))
 const Settings = lazy(() => import('@/pages/dashboard/Settings'))
 
@@ -86,6 +88,22 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <Swaps />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'swaps/new',
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <NewSwap />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'chat',
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <Chat />
           </Suspense>
         ),
       },
