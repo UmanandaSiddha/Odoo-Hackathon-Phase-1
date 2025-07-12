@@ -1,52 +1,28 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { Home } from '@/pages/Home';
-import { Login } from '@/pages/auth/Login';
-import { Register } from '@/pages/auth/Register';
-import { Onboarding } from '@/pages/auth/Onboarding';
-import { ErrorPage } from '@/pages/Error';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { useAuth } from '@/features/auth/AuthContext';
+import { createBrowserRouter } from 'react-router-dom'
+import { Suspense } from 'react'
+import { Home } from '@/pages/Home'
+import { Login } from '@/pages/auth/Login'
+import { Register } from '@/pages/auth/Register'
+import { Onboarding } from '@/pages/auth/Onboarding'
+import { ErrorPage } from '@/pages/Error'
+import { DashboardLayout } from '@/layouts/DashboardLayout'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { lazy } from 'react'
 
-// Protected route wrapper
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+// Lazy load dashboard pages
+const Dashboard = lazy(() => import('@/pages/dashboard/Dashboard'))
+const Profile = lazy(() => import('@/pages/dashboard/Profile'))
+const Swaps = lazy(() => import('@/pages/dashboard/Swaps'))
+const Notifications = lazy(() => import('@/pages/dashboard/Notifications'))
+const Settings = lazy(() => import('@/pages/dashboard/Settings'))
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" />;
-  }
-
-  return <>{children}</>;
-};
-
-// Public route wrapper (redirects to dashboard if authenticated)
-const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isLoading, user } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  if (isAuthenticated) {
-    if (!user?.hasCompletedOnboarding) {
-      return <Navigate to="/onboarding" />;
-    }
-    return <Navigate to="/dashboard" />;
-  }
-
-  return <>{children}</>;
-};
+// Loading fallback component
+const PageLoader = () => (
+  <div className="min-h-[80vh] flex items-center justify-center">
+    <LoadingSpinner size="lg" />
+  </div>
+)
 
 export const router = createBrowserRouter([
   {
@@ -55,43 +31,80 @@ export const router = createBrowserRouter([
     errorElement: <ErrorPage />,
   },
   {
-    path: '/login',
+    path: 'login',
     element: (
-      <PublicRoute>
+      <ProtectedRoute requireAuth={false}>
         <Login />
-      </PublicRoute>
+      </ProtectedRoute>
     ),
     errorElement: <ErrorPage />,
   },
   {
-    path: '/register',
+    path: 'register',
     element: (
-      <PublicRoute>
+      <ProtectedRoute requireAuth={false}>
         <Register />
-      </PublicRoute>
+      </ProtectedRoute>
     ),
     errorElement: <ErrorPage />,
   },
   {
-    path: '/onboarding',
+    path: 'onboarding',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute requireAuth={true}>
         <Onboarding />
       </ProtectedRoute>
     ),
     errorElement: <ErrorPage />,
   },
   {
-    path: '/dashboard',
     element: (
-      <ProtectedRoute>
-        <div>Dashboard (Coming Soon)</div>
+      <ProtectedRoute requireAuth>
+        <DashboardLayout />
       </ProtectedRoute>
     ),
     errorElement: <ErrorPage />,
+    children: [
+      {
+        path: 'dashboard',
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <Dashboard />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'profile',
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <Profile />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'swaps',
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <Swaps />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'notifications',
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <Notifications />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'settings',
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <Settings />
+          </Suspense>
+        ),
+      },
+    ],
   },
-  {
-    path: '*',
-    element: <ErrorPage />,
-  },
-]); 
+]) 
