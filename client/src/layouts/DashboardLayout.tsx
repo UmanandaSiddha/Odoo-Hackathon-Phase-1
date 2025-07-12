@@ -1,27 +1,19 @@
-import { ReactNode } from 'react';
+import { Outlet } from 'react-router-dom'
+import { Sidebar } from '@/components/ui/sidebar'
+import { motion } from 'framer-motion'
 
-interface DashboardLayoutProps {
-  children: ReactNode;
-}
-
-export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
+export const DashboardLayout = () => {
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                Logo
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {children}
-      </main>
+    <div className="min-h-screen bg-background">
+      <Sidebar />
+      <motion.main
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 20 }}
+        className="md:pl-[240px] p-4 md:p-8"
+      >
+        <Outlet />
+      </motion.main>
     </div>
-  );
-}; 
+  )
+} 
