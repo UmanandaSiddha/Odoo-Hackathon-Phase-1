@@ -145,7 +145,6 @@ export const deleteSwapRequest = catchAsyncErrors(async (req: Request, res: Resp
     return res.status(StatusCodes.OK).json({ message: 'Request deleted successfully' });
 });
 
-
 export const getMyRequests = catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.user?.id;
 
