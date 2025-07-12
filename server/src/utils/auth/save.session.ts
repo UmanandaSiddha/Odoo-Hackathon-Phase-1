@@ -1,7 +1,8 @@
 import { prisma } from "../..";
 
+// Calculate expiration date (14 days from now)
 const expiresAt = new Date();
-expiresAt.setDate(expiresAt.getDate() + Number("1000 * 60 * 60 * 24 * 14"));
+expiresAt.setDate(expiresAt.getDate() + 14);
 
 export const saveSessionInDB = async (
 	userId: string,
@@ -29,7 +30,7 @@ export const saveSessionInDB = async (
 			return sessionInDB;
 		}
 
-		const updatedSesison = await prisma.session.update({
+		const updatedSession = await prisma.session.update({
 			where: {
 				id: existingSession.id
 			},
@@ -40,8 +41,8 @@ export const saveSessionInDB = async (
 			}
 		})
 
-		console.log("session updated in the database: ", updatedSesison);
-		return updatedSesison;
+		console.log("session updated in the database: ", updatedSession);
+		return updatedSession;
 	} catch (error) {
 		console.error("Error while saving session data: ", error);
 		throw new Error("Error while saving session data");

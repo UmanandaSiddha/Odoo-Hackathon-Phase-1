@@ -23,7 +23,7 @@ interface INewUserProps {
 // Validation schema for registration
 const registerSchema = z.object({
 	firstName: z.string().min(2, "Name must be at least 2 characters"),
-	lastname: z.string().min(2, "last name must be at least 2 characters"),
+	lastName: z.string().min(2, "last name must be at least 2 characters"),
 	username: z.string().min(2, "username must be at least 2 characters"),
 	email: z.string().email("Invalid email format"),
 	password: z.string().min(6, "Password must be at least 6 characters"),
@@ -60,7 +60,7 @@ export const register = async (req: Request, res: Response) => {
 		const user: INewUserProps = await prisma.user.create({
 			data: {
 				firstName: validatedData.firstName,
-				lastName: validatedData.lastname,
+				lastName: validatedData.lastName,
 				username: validatedData.username,
 				email: validatedData.email,
 				password: hashedPassword,
@@ -78,8 +78,8 @@ export const register = async (req: Request, res: Response) => {
 			},
 		});
 
-		const accessToken = accessTokenGenerator(Number(user.id));
-		const refreshToken = refreshTokenGenerator(Number(user.id));
+		const accessToken = accessTokenGenerator(user.id);
+		const refreshToken = refreshTokenGenerator(user.id);
 
 		// saving the session in the database
 		const savedSession = await saveSessionInDB(

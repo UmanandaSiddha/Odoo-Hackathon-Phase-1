@@ -12,7 +12,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  MessageSquare
 } from 'lucide-react'
 import { useAuth } from '@/features/auth/AuthContext'
 
@@ -83,6 +84,7 @@ export const Sidebar = ({ isCollapsed, onCollapsedChange }: SidebarProps) => {
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/profile', icon: Users, label: 'Profile' },
     { to: '/swaps', icon: Repeat2, label: 'Swaps' },
+    { to: '/chat', icon: MessageSquare, label: 'Chat' },
     { to: '/notifications', icon: Bell, label: 'Notifications' },
     { to: '/settings', icon: Settings, label: 'Settings' }
   ]

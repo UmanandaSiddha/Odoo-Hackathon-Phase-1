@@ -34,8 +34,8 @@ export const login = async (req: Request, res: Response) => {
 		});
 
 		// Generate new tokens
-		const accessToken = accessTokenGenerator(Number(existingUser.id));
-		const refreshToken = refreshTokenGenerator(Number(existingUser.id));
+		const accessToken = accessTokenGenerator(existingUser.id);
+		const refreshToken = refreshTokenGenerator(existingUser.id);
 
 		const saveSession = await saveSessionInDB(existingUser.id, accessToken, refreshToken);
 		if (!saveSession) return res.status(500).json({
