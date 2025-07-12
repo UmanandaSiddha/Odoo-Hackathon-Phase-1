@@ -15,7 +15,7 @@ import {
   Menu,
   MessageSquare
 } from 'lucide-react'
-import { useAuth } from '@/features/auth/AuthContext'
+// import { useAuth } from '@/features/auth/AuthContext'
 
 interface NavItemProps {
   to: string
@@ -78,7 +78,7 @@ const NavItem = ({ to, icon: Icon, label, isCollapsed }: NavItemProps) => {
 }
 
 export const Sidebar = ({ isCollapsed, onCollapsedChange }: SidebarProps) => {
-  const { logout } = useAuth()
+  // const { logout } = useAuth()
 
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -184,7 +184,7 @@ export const Sidebar = ({ isCollapsed, onCollapsedChange }: SidebarProps) => {
               'w-full flex items-center gap-2 text-destructive hover:text-destructive hover:bg-destructive/10',
               isCollapsed ? 'justify-center' : 'justify-start px-3'
             )}
-            onClick={logout}
+            // onClick={logout}
           >
             <LogOut className="h-5 w-5" />
             <AnimatePresence>

@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/features/auth/AuthContext';
+// import { useAuth } from '@/features/auth/AuthContext';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
+// import axios from 'axios';
 import '@/styles/animations.css';
+import { useAppDispatch, useAppSelector } from '@/hooks/reduxHooks';
+import { loginUser } from '@/store/slice/auth.slice';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email format'),
@@ -20,40 +22,67 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export const Login = () => {
-  const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  // const [error, setError] = useState('');
+  // const [showPassword, setShowPassword] = useState(false);
+  // const { login } = useAuth();
+  // const navigate = useNavigate();
   
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-  });
+  // const {
+  //   register,
+  //   handleSubmit,
+  //   formState: { errors, isSubmitting },
+  // } = useForm<LoginFormData>({
+  //   resolver: zodResolver(loginSchema),
+  // });
 
-  const onSubmit = async (data: LoginFormData) => {
-    try {
-      setError('');
-      const response = await axios.post('http://localhost:8000/api/v1/auth/login', data);
-      const { user, accessToken } = response.data;
-      login(accessToken, user);
+  // const onSubmit = async (data: LoginFormData) => {
+  //   try {
+  //     setError('');
+  //     const response = await axios.post('http://localhost:8000/api/v1/auth/login', data);
+  //     const { user, accessToken } = response.data;
+  //     login(accessToken, user);
       
-      if (!user.hasCompletedOnboarding) {
-        navigate('/onboarding');
-      } else {
-        navigate('/dashboard');
-      }
-    } catch (err: any) {
-      if (err.response?.data?.errors) {
-        // Handle validation errors from the server
-        setError(err.response.data.errors.map((e: any) => e.message).join(', '));
-      } else {
-        setError(err.response?.data?.message || 'Invalid email or password');
-      }
-    }
-  };
+  //     if (!user.hasCompletedOnboarding) {
+  //       navigate('/onboarding');
+  //     } else {
+  //       navigate('/dashboard');
+  //     }
+  //   } catch (err: any) {
+  //     if (err.response?.data?.errors) {
+  //       // Handle validation errors from the server
+  //       setError(err.response.data.errors.map((e: any) => e.message).join(', '));
+  //     } else {
+  //       setError(err.response?.data?.message || 'Invalid email or password');
+  //     }
+  //   }
+  // };
+
+  const [showPassword, setShowPassword] = useState(false);
+    const navigate = useNavigate();
+    const location = useLocation();
+    const dispatch = useAppDispatch();
+    const { loading, error, user } = useAppSelector((state) => state.auth);
+
+    const from = location.state?.from?.pathname || '/dashboard';
+
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm<LoginFormData>({
+        resolver: zodResolver(loginSchema),
+    });
+
+    useEffect(() => {
+        // If login is successful (user object is populated), navigate
+        if (user) {
+            navigate(from, { replace: true });
+        }
+    }, [user, navigate, from]);
+
+    const onSubmit = (data: LoginFormData) => {
+        dispatch(loginUser(data));
+    };
 
   return (
     <AuthLayout
@@ -151,10 +180,10 @@ export const Login = () => {
           <Button
             type="submit"
             className="w-full relative overflow-hidden group"
-            disabled={isSubmitting}
+            disabled={loading}
           >
             <AnimatePresence mode="wait">
-              {isSubmitting ? (
+              {loading ? (
                 <motion.div
                   key="loading"
                   initial={{ opacity: 0 }}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/features/auth/AuthContext';
+// import { useAuth } from '@/features/auth/AuthContext';
 import { Loader2, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -53,7 +53,7 @@ export const Onboarding = () => {
   });
   
   const navigate = useNavigate();
-  const { user } = useAuth();
+  // const { user } = useAuth();
 
   const handleStepClick = (index: number) => {
     if (index < currentStep) {
@@ -301,7 +301,7 @@ export const Onboarding = () => {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-2 text-center"
         >
-          <h1 className="text-3xl font-bold">Welcome, {user?.name}!</h1>
+          {/* <h1 className="text-3xl font-bold">Welcome, {user?.name}!</h1> */}
           <p className="text-muted-foreground">Let's set up your profile</p>
         </motion.div>
 

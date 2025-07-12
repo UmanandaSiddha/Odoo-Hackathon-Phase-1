@@ -4,6 +4,218 @@ import { StatusCodes } from "http-status-codes";
 import catchAsyncErrors from "../middlewares/catchAsyncErrors";
 import ErrorHandler from "../utils/errorHandler";
 
+export const getDashboardStats = catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
+    const userId = (req as any).user?.userId;
+    if (!userId) {
+        return next(new ErrorHandler('Unauthorized', StatusCodes.UNAUTHORIZED));
+    }
+
+    // Get all the required data in parallel
+    const [
+        user,
+        totalSwaps,
+        monthlySwaps,
+        activeConnections,
+        ratings,
+        skillProgress,
+        achievements,
+        upcomingSwaps
+    ] = await Promise.all([
+        // Get user details
+        prisma.user.findUnique({
+            where: { id: userId },
+            select: { 
+                firstName: true,
+                lastName: true,
+                email: true,
+                profilePicture: true
+            }
+        }),
+
+        // Total swaps
+        prisma.swapRequest.count({
+            where: {
+                OR: [
+                    { senderId: userId },
+                    { receiverId: userId }
+                ],
+                status: 'ACCEPTED'
+            }
+        }),
+
+        // Monthly swaps
+        prisma.swapRequest.count({
+            where: {
+                OR: [
+                    { senderId: userId },
+                    { receiverId: userId }
+                ],
+                status: 'ACCEPTED',
+                createdAt: {
+                    gte: new Date(new Date().setMonth(new Date().getMonth() - 1))
+                }
+            }
+        }),
+
+        // Active connections
+        prisma.swapRequest.findMany({
+            where: {
+                OR: [
+                    { senderId: userId },
+                    { receiverId: userId }
+                ],
+                status: 'ACCEPTED'
+            },
+            select: {
+                sender: {
+                    select: { id: true }
+                },
+                receiver: {
+                    select: { id: true }
+                }
+            }
+        }),
+
+        // Get ratings
+        prisma.feedback.findMany({
+            where: {
+                revieweeId: userId
+            },
+            select: {
+                rating: true
+            }
+        }),
+
+        // Skill progress
+        prisma.skillProgress.findMany({
+            where: {
+                userId: userId
+            },
+            orderBy: {
+                progress: 'desc'
+            },
+            take: 3
+        }),
+
+        // Achievements
+        prisma.achievement.findMany({
+            where: {
+                userId: userId
+            },
+            orderBy: {
+                unlockedAt: 'desc'
+            },
+            take: 4
+        }),
+
+        // Upcoming swaps (pending requests)
+        prisma.swapRequest.findMany({
+            where: {
+                OR: [
+                    { senderId: userId },
+                    { receiverId: userId }
+                ],
+                status: 'ACCEPTED'
+            },
+            select: {
+                id: true,
+                skillOffered: true,
+                skillWanted: true,
+                sender: {
+                    select: {
+                        firstName: true,
+                        lastName: true
+                    }
+                },
+                receiver: {
+                    select: {
+                        firstName: true,
+                        lastName: true
+                    }
+                },
+                createdAt: true
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            take: 3
+        })
+    ]);
+
+    // Calculate average rating
+    const averageRating = ratings.length > 0
+        ? (ratings.reduce((acc, curr) => acc + curr.rating, 0) / ratings.length).toFixed(1)
+        : '0.0';
+
+    // Get unique connections
+    const uniqueConnections = new Set();
+    activeConnections.forEach(conn => {
+        uniqueConnections.add(conn.sender.id);
+        uniqueConnections.add(conn.receiver.id);
+    });
+    uniqueConnections.delete(userId); // Remove self from connections
+
+    // Format upcoming swaps
+    const formattedUpcomingSwaps = upcomingSwaps.map(swap => ({
+        title: swap.skillWanted,
+        with: swap.senderId === userId 
+            ? `${swap.receiver.firstName} ${swap.receiver.lastName}`
+            : `${swap.sender.firstName} ${swap.sender.lastName}`,
+        date: new Date(swap.createdAt).toLocaleString(),
+        skillToLearn: swap.skillWanted,
+        skillToTeach: swap.skillOffered
+    }));
+
+    const stats = {
+        totalSwaps: {
+            title: 'Total Swaps',
+            value: totalSwaps,
+            description: `${monthlySwaps} completed this month`,
+            trend: {
+                value: monthlySwaps > 0 ? ((monthlySwaps / totalSwaps) * 100).toFixed(0) : 0,
+                isPositive: true
+            }
+        },
+        activeConnections: {
+            title: 'Active Connections',
+            value: uniqueConnections.size,
+            description: 'Active learning partners',
+            trend: {
+                value: 10,
+                isPositive: true
+            }
+        },
+        averageRating: {
+            title: 'Average Rating',
+            value: averageRating,
+            description: `From ${ratings.length} reviews`,
+            trend: {
+                value: 5,
+                isPositive: true
+            }
+        },
+        skillsProgress: {
+            title: 'Skills Progress',
+            value: skillProgress.length > 0 
+                ? `${Math.max(...skillProgress.map(s => s.progress))}%`
+                : '0%',
+            description: `${skillProgress.length} skills improved`,
+            trend: {
+                value: 15,
+                isPositive: true
+            }
+        }
+    };
+
+    return res.status(StatusCodes.OK).json({
+        user,
+        stats,
+        skillProgress,
+        achievements,
+        upcomingSwaps: formattedUpcomingSwaps
+    });
+});
+
 export const getDashboardUsers = catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
     const users = await prisma.user.findMany({
         where: {

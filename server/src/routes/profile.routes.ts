@@ -2,6 +2,8 @@ import express from 'express';
 import {
     getCurrentUser,
     updateUserProfile,
+    updateSkills,
+    updateSkillProgress,
     searchUsers,
     updateUserStatus,
     changePassword,
@@ -11,14 +13,19 @@ import { authenticateUser } from '../middlewares/token.middleware';
 
 const router = express.Router();
 
+// Protected routes - require authentication
+router.use(authenticateUser);
 
-router.get('/getUser/:userId', authenticateUser, getCurrentUser);               // GET current user
-router.patch('/update/:userId', authenticateUser, updateUserProfile);          // PATCH profile update
-router.patch('/update/status/:userId', authenticateUser, updateUserStatus);    // PATCH isOnline / lastLogin
-router.patch('/update/password/:userId', authenticateUser, changePassword);    // PATCH change password
-router.delete('/delete/:userId', authenticateUser, deleteUserAccount);         // DELETE account
+// Profile routes
+router.get('/me', getCurrentUser);
+router.patch('/update', updateUserProfile);
+router.patch('/skills', updateSkills);
+router.patch('/skills/progress', updateSkillProgress);
+router.patch('/status', updateUserStatus);
+router.patch('/password', changePassword);
+router.delete('/delete', deleteUserAccount);
 
-
-router.get('/skill/:userId', authenticateUser, searchUsers);                                // GET user search by skill, naprofile, etc.
+// Public routes
+router.get('/search', searchUsers);
 
 export default router;

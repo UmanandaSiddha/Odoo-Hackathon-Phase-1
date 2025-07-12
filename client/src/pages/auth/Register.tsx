@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/features/auth/AuthContext';
+// import { useAuth } from '@/features/auth/AuthContext';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { Loader2, User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import '@/styles/animations.css';
+import { useAppDispatch, useAppSelector } from '@/hooks/reduxHooks';
+import { registerUser } from '@/store/slice/auth.slice';
 
 const registerSchema = z.object({
   firstName: z.string().min(2, "Name must be at least 2 characters"),
@@ -23,35 +25,60 @@ const registerSchema = z.object({
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export const Register = () => {
-  const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
-  });
+    const navigate = useNavigate();
+    const dispatch = useAppDispatch();
+    const { loading, error, user } = useAppSelector((state) => state.auth);
+    
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm<RegisterFormData>({
+        resolver: zodResolver(registerSchema),
+    });
 
-  const onSubmit = async (data: RegisterFormData) => {
-    try {
-      setError('');
-      const response = await axios.post('http://localhost:8000/api/v1/auth/register', data);
-      const { user, accessToken } = response.data;
-      login(accessToken, user);
-      navigate('/onboarding');
-    } catch (err: any) {
-      if (err.response?.data?.errors) {
-        // Handle Zod validation errors from the server
-        setError(err.response.data.errors.map((e: any) => e.message).join(', '));
-      } else {
-        setError(err.response?.data?.message || 'Failed to create account');
-      }
-    }
-  };
+    // Navigate to onboarding once registration is successful and user is set
+    useEffect(() => {
+        if (user) {
+            navigate('/onboarding');
+        }
+    }, [user, navigate]);
+
+    const onSubmit = (data: RegisterFormData) => {
+        dispatch(registerUser(data));
+    };
+
+
+  // const [error, setError] = useState('');
+  // const [showPassword, setShowPassword] = useState(false);
+  // // const { login } = useAuth();
+  // const navigate = useNavigate();
+  
+  // const {
+  //   register,
+  //   handleSubmit,
+  //   formState: { errors, isSubmitting },
+  // } = useForm<RegisterFormData>({
+  //   resolver: zodResolver(registerSchema),
+  // });
+
+  // const onSubmit = async (data: RegisterFormData) => {
+  //   try {
+  //     setError('');
+  //     const response = await axios.post('http://localhost:8000/api/v1/auth/register', data);
+  //     const { user, accessToken } = response.data;
+  //     // login(accessToken, user);
+  //     navigate('/onboarding');
+  //   } catch (err: any) {
+  //     if (err.response?.data?.errors) {
+  //       // Handle Zod validation errors from the server
+  //       setError(err.response.data.errors.map((e: any) => e.message).join(', '));
+  //     } else {
+  //       setError(err.response?.data?.message || 'Failed to create account');
+  //     }
+  //   }
+  // };
 
   const formFields = [
     {
@@ -166,10 +193,10 @@ export const Register = () => {
           <Button
             type="submit"
             className="w-full relative overflow-hidden group"
-            disabled={isSubmitting}
+            disabled={loading}
           >
             <AnimatePresence mode="wait">
-              {isSubmitting ? (
+              {loading ? (
                 <motion.div
                   key="loading"
                   initial={{ opacity: 0 }}
