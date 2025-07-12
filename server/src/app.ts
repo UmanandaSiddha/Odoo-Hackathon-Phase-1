@@ -6,6 +6,7 @@ import helmet from "helmet";
 import ErrorMiddleware from "./middlewares/error";
 
 import conversations  from "./routes/conversation.routes";
+import auth from './routes/auth.routes';
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.static("public"));
 
 app.use("/api/v1/conversation", conversations);
+app.use("/api/v1/auth", auth);
 app.use(ErrorMiddleware);
 
 export default app;
